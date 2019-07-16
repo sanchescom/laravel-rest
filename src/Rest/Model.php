@@ -2,7 +2,7 @@
 
 namespace App\Rest;
 
-use App\Rest\ClientResolverInterface as Resolver;
+use App\Rest\Contracts\ClientResolverInterface as Resolver;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Jenssegers\Model\Model as BaseModel;
@@ -13,7 +13,7 @@ class Model extends BaseModel
     /**
      * The client resolver instance.
      *
-     * @var \App\Rest\ClientResolverInterface
+     * @var \App\Rest\Contracts\ClientResolverInterface
      */
     protected static $resolver;
 
@@ -48,7 +48,7 @@ class Model extends BaseModel
     /**
      * Get the client for the model.
      *
-     * @return \App\Rest\ClientInterface
+     * @return \App\Rest\Contracts\ClientInterface
      */
     public function getClient()
     {
@@ -76,7 +76,7 @@ class Model extends BaseModel
      * @param string|null $endpoint
      * @param array $options
      *
-     * @return \App\Rest\ClientInterface
+     * @return \App\Rest\Contracts\ClientInterface
      */
     public static function resolveClient($client = null, $endpoint = null, array $options = [])
     {
@@ -99,7 +99,8 @@ class Model extends BaseModel
     /**
      * Set the endpoint associated with the model.
      *
-     * @param  string  $endpoint
+     * @param string $endpoint
+     *
      * @return $this
      */
     public function setEndpoint($endpoint)
@@ -128,7 +129,8 @@ class Model extends BaseModel
     /**
      * Set the client resolver instance.
      *
-     * @param  \App\Rest\ClientResolverInterface  $resolver
+     * @param \App\Rest\Contracts\ClientResolverInterface $resolver
+     *
      * @return void
      */
     public static function setClientResolver(Resolver $resolver)
@@ -139,7 +141,8 @@ class Model extends BaseModel
     /**
      * Create a new Collection instance.
      *
-     * @param  array  $models
+     * @param array $models
+     *
      * @return \Illuminate\Support\Collection
      */
     public function newCollection(array $models = [])
@@ -172,15 +175,15 @@ class Model extends BaseModel
      *
      * @throws \Sanchescom\Support\Exceptions\UnableDecodeJsonException
      *
-     * @return Collection|BaseModel|$this
+     * @return \Jenssegers\Model\Model|\Illuminate\Support\Collection|self
      */
-    public function get($id = '')
+    public function get($id = null)
     {
         $response = Json::asArray(
             $this->getClient()->get($id)->getContent()
         );
 
-        if ($id) {
+        if ($id !== null) {
             return $this->newInstance($response);
         }
 
@@ -193,9 +196,9 @@ class Model extends BaseModel
      *
      * @throws \Sanchescom\Support\Exceptions\UnableDecodeJsonException
      *
-     * @return BaseModel
+     * @return \Jenssegers\Model\Model|self
      */
-    public function put($id = '', array $data = [])
+    public function put($id = null, array $data = [])
     {
         $this->fill($data);
 
@@ -212,7 +215,7 @@ class Model extends BaseModel
      *
      * @return bool
      */
-    public function delete($id = '')
+    public function delete($id = null)
     {
         if ($this->getKey()) {
             $id = $this->getKey();
@@ -228,7 +231,7 @@ class Model extends BaseModel
      *
      * @throws \Sanchescom\Support\Exceptions\UnableDecodeJsonException
      *
-     * @return BaseModel
+     * @return \Jenssegers\Model\Model|self
      */
     public function post(array $data = [])
     {
@@ -247,9 +250,9 @@ class Model extends BaseModel
      *
      * @throws \Sanchescom\Support\Exceptions\UnableDecodeJsonException
      *
-     * @return Collection
+     * @return \Illuminate\Support\Collection
      */
-    public function findMany(array $ids)
+    public function getMany(array $ids = [])
     {
         $items = [];
 

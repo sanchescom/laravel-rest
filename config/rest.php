@@ -9,7 +9,7 @@ return [
 
             'provider' => 'guzzle',
 
-            'base_uri' => 'https://wl-iam.test.env/engines/acp/ory/regex/',
+            'base_uri' => 'https://iam.test.env/engines/acp/ory/regex/',
 
             'version' => '',
 

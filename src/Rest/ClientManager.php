@@ -3,6 +3,7 @@
 namespace App\Rest;
 
 use App\Rest\Clients\ClientFactory;
+use App\Rest\Contracts\ClientResolverInterface;
 use Illuminate\Support\Arr;
 use InvalidArgumentException;
 
@@ -16,21 +17,21 @@ class ClientManager implements ClientResolverInterface
     protected $app;
 
     /**
-     * The database connection factory instance.
+     * The client factory instance.
      *
      * @var \App\Rest\Clients\ClientFactory
      */
     protected $factory;
 
     /**
-     * The active connection instances.
+     * The active client instances.
      *
      * @var array
      */
     protected $clients = [];
 
     /**
-     * The custom connection resolvers.
+     * The custom client resolvers.
      *
      * @var array
      */
@@ -50,12 +51,12 @@ class ClientManager implements ClientResolverInterface
     }
 
     /**
-     * Get a database connection instance.
+     * Get a client instance.
      *
      * @param string|null $name
      * @param array $options
      *
-     * @return ClientInterface
+     * @return \App\Rest\Contracts\ClientInterface
      */
     public function client($name = null, array $options = [])
     {
@@ -67,11 +68,11 @@ class ClientManager implements ClientResolverInterface
     }
 
     /**
-     * Make the database connection instance.
+     * Make the client instance.
      *
      * @param string $name
      * @param array $options
-     * @return ClientInterface
+     * @return \App\Rest\Contracts\ClientInterface
      */
     protected function makeClient($name, array $options = [])
     {
@@ -85,11 +86,11 @@ class ClientManager implements ClientResolverInterface
             return call_user_func($this->extensions[$provider], $config, $name);
         }
 
-        return $this->factory->createClient($config, $name);
+        return $this->factory->createClient($config);
     }
 
     /**
-     * Get the configuration for a connection.
+     * Get the configuration for a client.
      *
      * @param  string  $name
      * @return array
@@ -110,7 +111,7 @@ class ClientManager implements ClientResolverInterface
     }
 
     /**
-     * Get the default connection name.
+     * Get the default client name.
      *
      * @return string
      */
@@ -120,7 +121,7 @@ class ClientManager implements ClientResolverInterface
     }
 
     /**
-     * Set the default connection name.
+     * Set the default client name.
      *
      * @param  string  $name
      * @return void
@@ -141,7 +142,7 @@ class ClientManager implements ClientResolverInterface
     }
 
     /**
-     * Register an extension connection resolver.
+     * Register an extension client resolver.
      *
      * @param  string    $name
      * @param  callable  $resolver
@@ -153,7 +154,7 @@ class ClientManager implements ClientResolverInterface
     }
 
     /**
-     * Return all of the created connections.
+     * Return all of the created clients.
      *
      * @return array
      */

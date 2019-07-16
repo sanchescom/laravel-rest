@@ -2,9 +2,8 @@
 
 namespace App\Rest\Clients;
 
-use App\Rest\ClientInterface;
+use App\Rest\Contracts\ClientInterface;
 use GuzzleHttp\Client;
-use Illuminate\Http\Response;
 
 class GuzzleClient implements ClientInterface
 {
@@ -29,9 +28,9 @@ class GuzzleClient implements ClientInterface
     /**
      * @param string $id
      *
-     * @return Response
+     * @return \Illuminate\Http\Response
      */
-    public function get($id = '')
+    public function get($id = null)
     {
         $response = $this->client->get($this->getEndpoint() . '/' . $id);
 
@@ -42,9 +41,9 @@ class GuzzleClient implements ClientInterface
      * @param string $id
      * @param array $data
      *
-     * @return Response
+     * @return \Illuminate\Http\Response
      */
-    public function put($id = '', array $data = [])
+    public function put($id = null, array $data = [])
     {
         $response = $this->client->put($this->getEndpoint() . '/' . $id, ['body' => json_encode($data)]);
 
@@ -54,7 +53,7 @@ class GuzzleClient implements ClientInterface
     /**
      * @param array $data
      *
-     * @return Response
+     * @return \Illuminate\Http\Response
      */
     public function post(array $data = [])
     {
@@ -66,9 +65,9 @@ class GuzzleClient implements ClientInterface
     /**
      * @param string $id
      *
-     * @return Response
+     * @return \Illuminate\Http\Response
      */
-    public function delete($id = '')
+    public function delete($id = null)
     {
         $response = $this->client->delete($this->getEndpoint() . '/' . $id);
 

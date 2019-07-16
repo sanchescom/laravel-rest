@@ -24,22 +24,8 @@ class RestServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        $this->registerClientServices();
-    }
-
-    /**
-     * Register the primary database bindings.
-     *
-     * @return void
-     */
-    protected function registerClientServices()
-    {
-        $this->app->singleton('rest.factory', function ($app) {
-            return new ClientFactory($app);
-        });
-
         $this->app->singleton('rest', function ($app) {
-            return new ClientManager($app, $app['rest.factory']);
+            return new ClientManager($app, new ClientFactory());
         });
     }
 }

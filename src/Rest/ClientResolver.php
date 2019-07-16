@@ -2,6 +2,9 @@
 
 namespace App\Rest;
 
+use App\Rest\Contracts\ClientInterface;
+use App\Rest\Contracts\ClientResolverInterface;
+
 class ClientResolver implements ClientResolverInterface
 {
     /**
@@ -37,7 +40,7 @@ class ClientResolver implements ClientResolverInterface
      * @param string|null $name
      * @param array $options
      *
-     * @return \App\Rest\ClientInterface
+     * @return \App\Rest\Contracts\ClientInterface
      */
     public function client($name = null, array $options = [])
     {
@@ -52,7 +55,7 @@ class ClientResolver implements ClientResolverInterface
      * Add a client to the resolver.
      *
      * @param  string  $name
-     * @param  \App\Rest\ClientInterface  $client
+     * @param  \App\Rest\Contracts\ClientInterface  $client
      * @return void
      */
     public function addClient($name, ClientInterface $client)

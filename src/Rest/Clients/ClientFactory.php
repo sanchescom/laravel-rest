@@ -2,40 +2,19 @@
 
 namespace App\Rest\Clients;
 
-use App\Rest\ClientInterface;
 use InvalidArgumentException;
-use Illuminate\Contracts\Container\Container;
 
 class ClientFactory
 {
     /**
-     * The IoC container instance.
-     *
-     * @var \Illuminate\Contracts\Container\Container
-     */
-    protected $container;
-
-    /**
-     * Create a new client factory instance.
-     *
-     * @param  \Illuminate\Contracts\Container\Container  $container
-     * @return void
-     */
-    public function __construct(Container $container)
-    {
-        $this->container = $container;
-    }
-
-    /**
      * Create a new client instance.
      *
      * @param array $config
-     * @param null $name
      *
-     * @return ClientInterface
+     * @return \App\Rest\Contracts\ClientInterface
      *
      */
-    public function createClient(array $config = [], $name = null)
+    public function createClient(array $config = [])
     {
         switch ($config['provider']) {
             case 'guzzle':

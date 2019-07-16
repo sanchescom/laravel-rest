@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Rest;
+namespace App\Rest\Contracts;
 
 interface ClientInterface
 {
@@ -16,7 +16,7 @@ interface ClientInterface
      *
      * @return \Illuminate\Http\Response
      */
-    public function get($id = '');
+    public function get($id = null);
 
     /**
      * @param string $id
@@ -24,14 +24,14 @@ interface ClientInterface
      *
      * @return \Illuminate\Http\Response
      */
-    public function put($id = '', array $data = []);
+    public function put($id = null, array $data = []);
 
     /**
      * @param string $id
      *
      * @return \Illuminate\Http\Response
      */
-    public function delete($id = '');
+    public function delete($id = null);
 
     /**
      * @param array $data
