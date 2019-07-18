@@ -3,6 +3,7 @@
 namespace App\Rest;
 
 use App\Rest\Contracts\ClientResolverInterface as Resolver;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Jenssegers\Model\Model as BaseModel;
@@ -44,6 +45,20 @@ class Model extends BaseModel
      * @var array
      */
     protected $options = [];
+
+    /**
+     * The options for request
+     *
+     * @var array
+     */
+    protected $query = [];
+
+    /**
+     * The options for request
+     *
+     * @var string
+     */
+    protected $dataKey;
 
     /**
      * Get the client for the model.
@@ -182,6 +197,10 @@ class Model extends BaseModel
         $response = Json::asArray(
             $this->getClient()->get($id)->getContent()
         );
+
+        if ($this->dataKey){
+            $response = Arr::get($response, $this->dataKey);
+        }
 
         if ($id !== null) {
             return $this->newInstance($response);
