@@ -5,11 +5,22 @@ namespace App\Rest;
 use App\Rest\Contracts\ClientResolverInterface as Resolver;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
+use Illuminate\Support\Traits\ForwardsCalls;
 use Jenssegers\Model\Model as BaseModel;
-use Sanchescom\Support\Json;
+use App\Collections\Collection as BaseCollection;
 
+/**
+ * Class Model.
+ * @method static BaseModel|BaseCollection get($id = null)
+ * @method static BaseModel post(array $data = [])
+ * @method static BaseModel put($id = null, array $data = [])
+ * @method static BaseModel delete($id = null)
+ * @method static BaseCollection getMany(array $ids = [])
+ */
 class Model extends BaseModel
 {
+    use ForwardsCalls;
+
     /**
      * The client resolver instance.
      *
@@ -37,6 +48,13 @@ class Model extends BaseModel
      * @var string
      */
     protected $primaryKey = 'id';
+
+    /**
+     * The property name of data response.
+     *
+     * @var string
+     */
+    protected $dataKey;
 
     /**
      * The options for request
@@ -80,10 +98,7 @@ class Model extends BaseModel
      */
     public static function resolveClient($client = null, $endpoint = null, array $options = [])
     {
-        $client = static::$resolver->client($client, $options);
-        $client->setEndpoint($endpoint);
-
-        return $client;
+        return static::$resolver->client($client, $options)->setEndpoint($endpoint);
     }
 
     /**
@@ -171,95 +186,54 @@ class Model extends BaseModel
     }
 
     /**
-     * @param string $id
-     *
-     * @throws \Sanchescom\Support\Exceptions\UnableDecodeJsonException
-     *
-     * @return \Jenssegers\Model\Model|\Illuminate\Support\Collection|self
+     * @return \App\Rest\Builder
      */
-    public function get($id = null)
+    public function newBuilder()
     {
-        $response = Json::asArray(
-            $this->getClient()->get($id)->getContent()
-        );
+        return new Builder();
+    }
 
-        if ($id !== null) {
-            return $this->newInstance($response);
+    /**
+     * @return \App\Rest\Builder
+     */
+    public function newModel()
+    {
+        return $this->newBuilder()->setModel($this);
+    }
+
+    /**
+     * Handle dynamic method calls into the model.
+     *
+     * @param  string  $method
+     * @param  array  $parameters
+     * @return mixed
+     */
+    public function __call($method, $parameters)
+    {
+        if (in_array($method, ['increment', 'decrement'])) {
+            return $this->$method(...$parameters);
         }
 
-        return $this->newCollection(self::hydrate($response));
+        return $this->forwardCallTo($this->newModel(), $method, $parameters);
     }
 
     /**
-     * @param string $id
-     * @param array $data
+     * Handle dynamic static method calls into the method.
      *
-     * @throws \Sanchescom\Support\Exceptions\UnableDecodeJsonException
-     *
-     * @return \Jenssegers\Model\Model|self
+     * @param  string  $method
+     * @param  array  $parameters
+     * @return mixed
      */
-    public function put($id = null, array $data = [])
+    public static function __callStatic($method, $parameters)
     {
-        $this->fill($data);
-
-        $response = $this
-            ->getClient()
-            ->put($id, $this->getAttributes())
-            ->getContent();
-
-        return $this->newInstance(Json::asArray($response));
+        return (new static)->$method(...$parameters);
     }
 
     /**
-     * @param string $id
-     *
-     * @return bool
+     * @return string|null
      */
-    public function delete($id = null)
+    public function getDataKey()
     {
-        if ($this->getKey()) {
-            $id = $this->getKey();
-        }
-
-        $this->getClient()->delete($id);
-
-        return true;
-    }
-
-    /**
-     * @param array $data
-     *
-     * @throws \Sanchescom\Support\Exceptions\UnableDecodeJsonException
-     *
-     * @return \Jenssegers\Model\Model|self
-     */
-    public function post(array $data = [])
-    {
-        $this->fill($data);
-
-        $response = $this
-            ->getClient()
-            ->post($this->getAttributes())
-            ->getContent();
-
-        return $this->newInstance(Json::asArray($response));
-    }
-
-    /**
-     * @param array $ids
-     *
-     * @throws \Sanchescom\Support\Exceptions\UnableDecodeJsonException
-     *
-     * @return \Illuminate\Support\Collection
-     */
-    public function getMany(array $ids = [])
-    {
-        $items = [];
-
-        foreach ($ids as $id) {
-            $items[] = $this->get($id);
-        }
-
-        return $this->newCollection($items);
+        return $this->dataKey;
     }
 }

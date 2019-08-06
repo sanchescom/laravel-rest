@@ -19,6 +19,13 @@ interface ClientInterface
     public function get($id = null);
 
     /**
+     * @param array $ids
+     *
+     * @return \Illuminate\Http\Response[]
+     */
+    public function getMany(array $ids = []);
+
+    /**
      * @param string $id
      * @param array $data
      *
