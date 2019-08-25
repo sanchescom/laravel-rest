@@ -1,9 +1,9 @@
 <?php
 
-namespace App\Rest;
+namespace Sanchescom\Rest;
 
-use App\Rest\Contracts\ClientInterface;
-use App\Rest\Contracts\ClientResolverInterface;
+use Sanchescom\Rest\Contracts\ClientInterface;
+use Sanchescom\Rest\Contracts\ClientResolverInterface;
 
 class ClientResolver implements ClientResolverInterface
 {
@@ -40,7 +40,7 @@ class ClientResolver implements ClientResolverInterface
      * @param string|null $name
      * @param array $options
      *
-     * @return \App\Rest\Contracts\ClientInterface
+     * @return \Sanchescom\Rest\Contracts\ClientInterface
      */
     public function client($name = null, array $options = [])
     {
@@ -55,7 +55,7 @@ class ClientResolver implements ClientResolverInterface
      * Add a client to the resolver.
      *
      * @param  string  $name
-     * @param  \App\Rest\Contracts\ClientInterface  $client
+     * @param  \Sanchescom\Rest\Contracts\ClientInterface  $client
      * @return void
      */
     public function addClient($name, ClientInterface $client)

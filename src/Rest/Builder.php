@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Rest;
+namespace Sanchescom\Rest;
 
 use Illuminate\Support\Arr;
 use Sanchescom\Support\Json;
@@ -10,7 +10,7 @@ class Builder
     /**
      * The model being queried.
      *
-     * @var \App\Rest\Model
+     * @var \Sanchescom\Rest\Model
      */
     protected $model;
 
@@ -110,8 +110,9 @@ class Builder
     /**
      * Set a model instance for the model being queried.
      *
-     * @param  \App\Rest\Model  $model
-     * @return $this
+     * @param  \Sanchescom\Rest\Model  $model
+     *
+     * @return self
      */
     public function setModel(Model $model)
     {
@@ -124,6 +125,7 @@ class Builder
      * Create a collection of models from plain arrays.
      *
      * @param  array  $items
+     *
      * @return \Illuminate\Support\Collection
      */
     public function hydrate(array $items)

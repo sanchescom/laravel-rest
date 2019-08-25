@@ -1,21 +1,20 @@
 <?php
 
-namespace App\Rest;
+namespace Sanchescom\Rest;
 
-use App\Rest\Contracts\ClientResolverInterface as Resolver;
+use Sanchescom\Rest\Contracts\ClientResolverInterface as Resolver;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Illuminate\Support\Traits\ForwardsCalls;
 use Jenssegers\Model\Model as BaseModel;
-use App\Collections\Collection as BaseCollection;
 
 /**
  * Class Model.
- * @method static BaseModel|BaseCollection get($id = null)
+ * @method static BaseModel|Collection get($id = null)
  * @method static BaseModel post(array $data = [])
  * @method static BaseModel put($id = null, array $data = [])
  * @method static BaseModel delete($id = null)
- * @method static BaseCollection getMany(array $ids = [])
+ * @method static Collection getMany(array $ids = [])
  */
 class Model extends BaseModel
 {
@@ -24,7 +23,7 @@ class Model extends BaseModel
     /**
      * The client resolver instance.
      *
-     * @var \App\Rest\Contracts\ClientResolverInterface
+     * @var \Sanchescom\Rest\Contracts\ClientResolverInterface
      */
     protected static $resolver;
 
@@ -66,7 +65,7 @@ class Model extends BaseModel
     /**
      * Get the client for the model.
      *
-     * @return \App\Rest\Contracts\ClientInterface
+     * @return \Sanchescom\Rest\Contracts\ClientInterface
      */
     public function getClient()
     {
@@ -94,7 +93,7 @@ class Model extends BaseModel
      * @param string|null $endpoint
      * @param array $options
      *
-     * @return \App\Rest\Contracts\ClientInterface
+     * @return \Sanchescom\Rest\Contracts\ClientInterface
      */
     public static function resolveClient($client = null, $endpoint = null, array $options = [])
     {
@@ -144,7 +143,7 @@ class Model extends BaseModel
     /**
      * Set the client resolver instance.
      *
-     * @param \App\Rest\Contracts\ClientResolverInterface $resolver
+     * @param \Sanchescom\Rest\Contracts\ClientResolverInterface $resolver
      *
      * @return void
      */
@@ -186,7 +185,7 @@ class Model extends BaseModel
     }
 
     /**
-     * @return \App\Rest\Builder
+     * @return \Sanchescom\Rest\Builder
      */
     public function newBuilder()
     {
@@ -194,7 +193,7 @@ class Model extends BaseModel
     }
 
     /**
-     * @return \App\Rest\Builder
+     * @return \Sanchescom\Rest\Builder
      */
     public function newModel()
     {
@@ -206,6 +205,7 @@ class Model extends BaseModel
      *
      * @param  string  $method
      * @param  array  $parameters
+     *
      * @return mixed
      */
     public function __call($method, $parameters)

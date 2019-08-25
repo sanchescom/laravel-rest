@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Rest\Clients;
+namespace Sanchescom\Rest\Clients;
 
 use InvalidArgumentException;
 
@@ -11,7 +11,7 @@ class ClientFactory
      *
      * @param array $config
      *
-     * @return \App\Rest\Contracts\ClientInterface
+     * @return \Sanchescom\Rest\Contracts\ClientInterface
      *
      */
     public function createClient(array $config = [])

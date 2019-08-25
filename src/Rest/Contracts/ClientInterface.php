@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Rest\Contracts;
+namespace Sanchescom\Rest\Contracts;
 
 interface ClientInterface
 {

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Rest\Support;
+namespace Sanchescom\Rest\Support;
 
 use Illuminate\Support\Arr as BaseArr;
 use Sanchescom\Support\Json;

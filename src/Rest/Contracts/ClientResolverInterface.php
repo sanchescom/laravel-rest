@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Rest\Contracts;
+namespace Sanchescom\Rest\Contracts;
 
 interface ClientResolverInterface
 {
@@ -10,7 +10,7 @@ interface ClientResolverInterface
      * @param string|null $name
      * @param array $options
      *
-     * @return \App\Rest\Contracts\ClientInterface
+     * @return \Sanchescom\Rest\Contracts\ClientInterface
      */
     public function client($name = null, array $options = []);
 

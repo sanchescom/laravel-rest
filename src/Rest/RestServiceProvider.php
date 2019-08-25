@@ -1,9 +1,9 @@
 <?php
 
-namespace App\Rest;
+namespace Sanchescom\Rest;
 
-use App\Rest\Clients\ClientFactory;
 use Illuminate\Support\ServiceProvider;
+use Sanchescom\Rest\Clients\ClientFactory;
 
 class RestServiceProvider extends ServiceProvider
 {

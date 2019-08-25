@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Rest;
+namespace Sanchescom\Rest;
 
 use Illuminate\Container\Container;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -39,6 +39,7 @@ class Collection extends BaseCollection
      * @param  int  $perPage
      * @param  int  $currentPage
      * @param  array  $options
+     *
      * @return \Illuminate\Pagination\LengthAwarePaginator
      */
     protected function paginator($items, $total, $perPage, $currentPage, $options)

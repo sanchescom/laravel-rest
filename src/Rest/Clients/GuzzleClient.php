@@ -1,9 +1,9 @@
 <?php
 
-namespace App\Rest\Clients;
+namespace Sanchescom\Rest\Clients;
 
-use App\Rest\Contracts\ClientInterface;
-use App\Rest\Support\Arr;
+use Sanchescom\Rest\Contracts\ClientInterface;
+use Sanchescom\Rest\Support\Arr;
 use GuzzleHttp\Client;
 use GuzzleHttp\Pool;
 use GuzzleHttp\Psr7\Response;
@@ -133,7 +133,7 @@ class GuzzleClient implements ClientInterface
     /**
      * @param string|null $endpoint
      *
-     * @return \App\Rest\Contracts\ClientInterface
+     * @return \Sanchescom\Rest\Contracts\ClientInterface
      */
     public function setEndpoint(?string $endpoint): ClientInterface
     {

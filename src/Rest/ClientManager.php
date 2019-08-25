@@ -1,9 +1,9 @@
 <?php
 
-namespace App\Rest;
+namespace Sanchescom\Rest;
 
-use App\Rest\Clients\ClientFactory;
-use App\Rest\Contracts\ClientResolverInterface;
+use Sanchescom\Rest\Clients\ClientFactory;
+use Sanchescom\Rest\Contracts\ClientResolverInterface;
 use Illuminate\Support\Arr;
 use InvalidArgumentException;
 
@@ -19,7 +19,7 @@ class ClientManager implements ClientResolverInterface
     /**
      * The client factory instance.
      *
-     * @var \App\Rest\Clients\ClientFactory
+     * @var \Sanchescom\Rest\Clients\ClientFactory
      */
     protected $factory;
 
@@ -41,7 +41,7 @@ class ClientManager implements ClientResolverInterface
      * Create a new database manager instance.
      *
      * @param  \Illuminate\Contracts\Foundation\Application  $app
-     * @param  \App\Rest\Clients\ClientFactory  $factory
+     * @param  \Sanchescom\Rest\Clients\ClientFactory  $factory
      * @return void
      */
     public function __construct($app, ClientFactory $factory)
@@ -56,7 +56,7 @@ class ClientManager implements ClientResolverInterface
      * @param string|null $name
      * @param array $options
      *
-     * @return \App\Rest\Contracts\ClientInterface
+     * @return \Sanchescom\Rest\Contracts\ClientInterface
      */
     public function client($name = null, array $options = [])
     {
@@ -72,7 +72,8 @@ class ClientManager implements ClientResolverInterface
      *
      * @param string $name
      * @param array $options
-     * @return \App\Rest\Contracts\ClientInterface
+     *
+     * @return \Sanchescom\Rest\Contracts\ClientInterface
      */
     protected function makeClient($name, array $options = [])
     {

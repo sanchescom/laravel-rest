@@ -4,24 +4,14 @@ return [
     'default' => 'keto',
 
     'clients' => [
-
         'keto' => [
-
             'provider' => 'guzzle',
-
             'base_uri' => 'https://iam.test.env/engines/acp/ory/regex/',
-
-            'version' => '',
-
             'options' => [
                 'headers' => [
                     'Content-Type' => 'application/json',
                 ],
-
             ],
-
         ],
-
     ],
-
 ];
