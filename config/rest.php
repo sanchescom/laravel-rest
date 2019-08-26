@@ -1,12 +1,12 @@
 <?php
 
 return [
-    'default' => 'keto',
+    'default' => 'localhost',
 
     'clients' => [
-        'keto' => [
+        'localhost' => [
             'provider' => 'guzzle',
-            'base_uri' => 'https://iam.test.env/engines/acp/ory/regex/',
+            'base_uri' => 'https://localhost/',
             'options' => [
                 'headers' => [
                     'Content-Type' => 'application/json',
