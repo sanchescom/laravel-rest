@@ -1,6 +1,6 @@
 {
     "name": "sanchescom/laravel-rest",
-    "description": "This library provides.",
+    "description": "This library provides tools and interfaces for working with REST API with Models and Collections.",
     "license": "GPL-3.0",
     "authors": [
         {
