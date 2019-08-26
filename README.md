@@ -124,13 +124,13 @@ $user = User::get('1');
 **Retrieving Records By Ida**
 
 ```php
-$user = User::getMany(['1', '2']);
+$users = User::getMany(['1', '2']);
 ```
 
 **Wheres**
 
 ```php
-$users = User::get()->('first_name', 'Bob');
+$users = User::get()->where('first_name', 'Bob');
 ```
 
 For more information check https://laravel.com/docs/collections
