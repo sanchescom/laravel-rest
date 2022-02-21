@@ -14,14 +14,20 @@ interface ClientInterface
     /**
      * @param string $id
      *
-     * @return \Illuminate\Http\Response
+     * @return ?[]
      */
     public function get($id = null);
 
     /**
+     * @param array $filters
+     * @return ?[]
+     */
+    public function getOneBy(array $filters);
+
+    /**
      * @param array $ids
      *
-     * @return \Illuminate\Http\Response[]
+     * @return [][]
      */
     public function getMany(array $ids = []);
 
@@ -29,21 +35,21 @@ interface ClientInterface
      * @param string $id
      * @param array $data
      *
-     * @return \Illuminate\Http\Response
+     * @return []
      */
     public function put($id = null, array $data = []);
 
     /**
      * @param string $id
      *
-     * @return \Illuminate\Http\Response
+     * @return []
      */
     public function delete($id = null);
 
     /**
      * @param array $data
      *
-     * @return \Illuminate\Http\Response
+     * @return []
      */
     public function post(array $data = []);
 }

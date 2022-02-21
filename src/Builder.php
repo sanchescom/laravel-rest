@@ -23,11 +23,32 @@ class Builder
      */
     public function get($id = null)
     {
-        $response = Json::asArray(
-            $this->model->getClient()->get($id)->getContent()
-        );
+        $response = $this->model->getClient()->get($id);
 
-        if ($id !== null) {
+        return $this->makeOneResult($response);
+    }
+
+    /**
+     * @param string $id
+     *
+     * @throws \Sanchescom\Support\Exceptions\UnableDecodeJsonException
+     *
+     * @return ?\Jenssegers\Model\Model|\Illuminate\Support\Collection|self
+     */
+    public function getOneBy(array $filters = null)
+    {
+        $response = $this->model->getClient()->getOneBy($filters);
+
+        return $response ? $this->makeOneResult($response) : null;
+    }
+
+    /**
+     * @param $response
+     * @return \Illuminate\Support\Collection|Model
+     */
+    private function makeOneResult($response) {
+        $responseData = Arr::get($response, $this->model->getDataKey());
+        if (!empty(($responseData[$this->model->getKeyName()]))) {
             return $this->model->newInstance(
                 Arr::get($response, $this->model->getDataKey())
             );
@@ -50,9 +71,7 @@ class Builder
 
         $attributes = $this->model->getAttributes();
 
-        $response = Json::asArray(
-            $this->model->getClient()->put($id, $attributes)->getContent()
-        );
+        $response = $this->model->getClient()->put($id, $attributes);
 
         return $this->model->newInstance($response);
     }
@@ -82,9 +101,7 @@ class Builder
 
         $attributes = $this->model->getAttributes();
 
-        $response = Json::asArray(
-            $this->model->getClient()->post($attributes)->getContent()
-        );
+        $response = $this->model->getClient()->post($attributes);
 
         return $this->model->newInstance($response);
     }
@@ -99,10 +116,6 @@ class Builder
     public function getMany(array $ids = [])
     {
         $responses = $this->model->getClient()->getMany(array_filter($ids));
-
-        foreach ($responses as $key => $response) {
-            $responses[$key] = Json::asArray($response->getContent());
-        }
 
         return $this->hydrate($responses);
     }

@@ -2,8 +2,6 @@
 
 namespace Sanchescom\Rest\Clients;
 
-use InvalidArgumentException;
-
 class ClientFactory
 {
     /**
@@ -19,8 +17,8 @@ class ClientFactory
         switch ($config['provider']) {
             case 'guzzle':
                 return new GuzzleClient($config);
+            default:
+                return app($config['provider'], $config);
         }
-
-        throw new InvalidArgumentException("Unsupported driver [{$config['provider']}]");
     }
 }
