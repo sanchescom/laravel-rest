@@ -2,6 +2,7 @@
 
 namespace Sanchescom\Rest\Clients;
 
+use Sanchescom\Rest\Adapters\GuzzleResponseAdapter;
 use Sanchescom\Rest\Contracts\ClientInterface;
 use Sanchescom\Rest\Support\Arr;
 use GuzzleHttp\Client;
@@ -23,33 +24,37 @@ class GuzzleClient implements ClientInterface
     /** @var string|null */
     protected $endpoint;
 
+    /** @var GuzzleResponseAdapter  */
+    private GuzzleResponseAdapter $responseAdapter;
+
     /**
      * GuzzleClient constructor.
      *
      * @param array $config
      */
-    public function __construct(array $config = [])
+    public function __construct(array $config = [], GuzzleResponseAdapter $responseAdapter)
     {
         $this->client = new Client($config);
+        $this->responseAdapter = $responseAdapter;
     }
 
-    /**
-     * @param string $id
-     *
-     * @return \Illuminate\Http\Response
-     */
+    /** @inheritdoc */
     public function get($id = null)
     {
         $response = $this->client->get($this->getEndpoint($id));
 
-        return response($response->getBody(), $response->getStatusCode());
+        return $this->responseAdapter->arraify($response->getBody());
     }
 
-    /**
-     * @param array $ids
-     *
-     * @return \Illuminate\Http\Response[]
-     */
+
+    /** @inheritdoc  */
+    public function getOneBy(array $filters) {
+        $response = $this->client->get($this->endpoint . '?' . http_build_query($filters));
+
+        return $this->responseAdapter->arraify($response->getBody());
+    }
+
+    /** @inheritdoc */
     public function getMany(array $ids = [])
     {
         $requests = function ($ids) {
@@ -64,7 +69,7 @@ class GuzzleClient implements ClientInterface
 
         $pool = new Pool($this->client, $requests($ids), [
             'fulfilled' => function (Response $response) use (&$responses) {
-                $responses[] = response($response->getBody(), $response->getStatusCode());
+                $responses[] = $this->responseAdapter->arraify($response->getBody(), $response->getStatusCode());
             }
         ]);
 
@@ -75,45 +80,29 @@ class GuzzleClient implements ClientInterface
         return $responses;
     }
 
-    /**
-     * @param string $id
-     * @param array $data
-     *
-     * @throws \Sanchescom\Support\Exceptions\UnableEncodeJsonException
-     *
-     * @return \Illuminate\Http\Response
-     */
+
+    /** @inheritdoc */
     public function put($id = null, array $data = [])
     {
         $response = $this->client->put($this->getEndpoint($id), ['body' => Arr::asJson($data)]);
 
-        return response($response->getBody(), $response->getStatusCode());
+        return $this->responseAdapter->arraify($response->getBody());
     }
 
-    /**
-     * @param array $data
-     *
-     * @throws \Sanchescom\Support\Exceptions\UnableEncodeJsonException
-     *
-     * @return \Illuminate\Http\Response
-     */
+    /** @inheritdoc */
     public function post(array $data = [])
     {
         $response = $this->client->post($this->getEndpoint(), ['body' => Arr::asJson($data)]);
 
-        return response($response->getBody(), $response->getStatusCode());
+        return $this->responseAdapter->arraify($response->getBody());
     }
 
-    /**
-     * @param string $id
-     *
-     * @return \Illuminate\Http\Response
-     */
+    /** @inheritdoc */
     public function delete($id = null)
     {
         $response = $this->client->delete($this->getEndpoint($id));
 
-        return response($response->getBody(), $response->getStatusCode());
+        return $this->responseAdapter->arraify($response->getBody());
     }
 
     /**
