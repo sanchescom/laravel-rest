@@ -11,6 +11,8 @@ use JsonSerializable;
 /**
  * @implements ArrayAccess<string, mixed>
  * @implements Arrayable<string, mixed>
+ *
+ * @phpstan-consistent-constructor
  */
 class Model implements Arrayable, ArrayAccess, JsonSerializable
 {
