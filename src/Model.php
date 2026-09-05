@@ -6,16 +6,36 @@ namespace Sanchescom\Rest;
 
 use ArrayAccess;
 use Illuminate\Contracts\Support\Arrayable;
+use Illuminate\Support\Str;
 use JsonSerializable;
+use Sanchescom\Rest\Contracts\ClientInterface;
+use Sanchescom\Rest\Contracts\ClientResolverInterface;
 
 /**
  * @implements ArrayAccess<string, mixed>
  * @implements Arrayable<string, mixed>
  *
+ * @method static Model|Collection<int, static> get(string|int|null $id = null)
+ * @method static Collection<int, static> getMany(array<int, string|int|null> $ids)
+ * @method static Model post(array<string, mixed> $data = [])
+ * @method static Model put(string|int|null $id = null, array<string, mixed> $data = [])
+ * @method static bool delete(string|int|null $id = null)
+ *
  * @phpstan-consistent-constructor
  */
 class Model implements Arrayable, ArrayAccess, JsonSerializable
 {
+    protected static ClientResolverInterface $resolver;
+
+    protected ?string $client = null;
+
+    protected ?string $endpoint = null;
+
+    protected ?string $dataKey = null;
+
+    /** @var array<string, mixed> */
+    protected array $options = [];
+
     /** @var array<string, mixed> */
     protected array $attributes = [];
 
@@ -165,5 +185,55 @@ class Model implements Arrayable, ArrayAccess, JsonSerializable
     public function jsonSerialize(): array
     {
         return $this->toArray();
+    }
+
+    public static function setClientResolver(ClientResolverInterface $resolver): void
+    {
+        static::$resolver = $resolver;
+    }
+
+    public function getClient(): ClientInterface
+    {
+        return static::$resolver->client($this->client, $this->options);
+    }
+
+    public function getEndpoint(): string
+    {
+        return $this->endpoint ?? Str::snake(Str::pluralStudly(class_basename($this)));
+    }
+
+    public function getDataKey(): ?string
+    {
+        return $this->dataKey;
+    }
+
+    public function newBuilder(): Builder
+    {
+        return new Builder($this);
+    }
+
+    /**
+     * @param  array<int, static>  $models
+     * @return Collection<int, static>
+     */
+    public function newCollection(array $models = []): Collection
+    {
+        return new Collection($models);
+    }
+
+    /**
+     * @param  array<int, mixed>  $parameters
+     */
+    public function __call(string $method, array $parameters): mixed
+    {
+        return $this->newBuilder()->{$method}(...$parameters);
+    }
+
+    /**
+     * @param  array<int, mixed>  $parameters
+     */
+    public static function __callStatic(string $method, array $parameters): mixed
+    {
+        return (new static)->{$method}(...$parameters);
     }
 }
