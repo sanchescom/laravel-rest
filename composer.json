@@ -27,7 +27,8 @@
         "psr-4": {"Sanchescom\\Rest\\Tests\\": "tests/"}
     },
     "scripts": {
-        "test": "./vendor/bin/pest",
+        "test": "./vendor/bin/pest --exclude-group=live",
+        "test:live": "./vendor/bin/pest --group=live",
         "lint": "./vendor/bin/pint --test",
         "fix": "./vendor/bin/pint",
         "analyse": "./vendor/bin/phpstan analyse"
