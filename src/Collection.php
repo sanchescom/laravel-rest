@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Sanchescom\Rest;
 
+use Illuminate\Container\Container;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Collection as BaseCollection;
 
 /**
@@ -12,4 +15,28 @@ use Illuminate\Support\Collection as BaseCollection;
  *
  * @extends BaseCollection<TKey, TValue>
  */
-class Collection extends BaseCollection {}
+class Collection extends BaseCollection
+{
+    /**
+     * @return LengthAwarePaginator<int, TValue>
+     */
+    public function paginate(int $perPage = 15, string $pageName = 'page', ?int $page = null): LengthAwarePaginator
+    {
+        $page = $page ?: Paginator::resolveCurrentPage($pageName);
+
+        $total = $this->count();
+
+        $results = $this->forPage($page, $perPage)->values();
+
+        return Container::getInstance()->makeWith(LengthAwarePaginator::class, [
+            'items' => $results,
+            'total' => $total,
+            'perPage' => $perPage,
+            'currentPage' => $page,
+            'options' => [
+                'path' => Paginator::resolveCurrentPath(),
+                'pageName' => $pageName,
+            ],
+        ]);
+    }
+}
