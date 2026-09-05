@@ -22,6 +22,48 @@ composer require sanchescom/laravel-rest
 The service provider is registered automatically via package auto-discovery —
 no manual registration needed.
 
+## Quick Start
+
+A model is a class pointed at an endpoint. Everything below runs for real
+against [JSONPlaceholder](https://jsonplaceholder.typicode.com):
+
+```php
+<?php
+
+use Sanchescom\Rest\Model;
+
+class Post extends Model
+{
+    // endpoint is inferred from the class name: "posts"
+    protected array $casts = ['id' => 'int', 'userId' => 'int'];
+}
+```
+
+```php
+// config/rest.php
+'clients' => [
+    'placeholder' => [
+        'provider' => 'guzzle',
+        'base_uri' => 'https://jsonplaceholder.typicode.com/',
+    ],
+],
+```
+
+```php
+$post  = Post::get(1);                  // GET posts/1        -> Post
+$posts = Post::get();                   // GET posts          -> Collection<Post>
+$mine  = $posts->where('userId', 1);    // any Illuminate collection method
+$page  = $posts->paginate(10);          // LengthAwarePaginator
+
+$some  = Post::getMany([3, 1, 2]);      // concurrent requests, results in [3, 1, 2] order
+
+$new   = Post::post(['title' => 'Hi', 'userId' => 1]);   // POST posts
+$upd   = Post::put(1, ['title' => 'Updated']);           // PUT posts/1
+Post::delete(1);                                          // DELETE posts/1
+
+Post::get(987654);                      // 404 -> throws ModelNotFoundException
+```
+
 ## Configuration
 
 Publish the config file:
@@ -207,6 +249,40 @@ app('rest')->extend('mock', function () {
 
 $users = User::get(); // served from the mock
 ```
+
+## Usage Outside Laravel
+
+The package works without a booted Laravel app (only `paginate()` and config
+publishing need one). Wire the resolver yourself:
+
+```php
+use Sanchescom\Rest\ClientResolver;
+use Sanchescom\Rest\Clients\GuzzleClient;
+use Sanchescom\Rest\Model;
+
+$resolver = new ClientResolver([
+    'placeholder' => GuzzleClient::fromConfig([
+        'base_uri' => 'https://jsonplaceholder.typicode.com/',
+        'options' => ['headers' => ['Accept' => 'application/json']],
+    ]),
+]);
+$resolver->setDefaultClient('placeholder');
+
+Model::setClientResolver($resolver);
+
+Post::get(1); // works — no Laravel container involved
+```
+
+## Roadmap
+
+Planned for upcoming releases (not in 1.0 yet):
+
+- Query builder (`where()` translated to query strings)
+- Relations between REST models
+- Authentication drivers (bearer, basic, custom)
+- Retry / backoff policies
+- Test fakes (`Rest::fake()`)
+- Model events
 
 ## Upgrading from 0.x
 
