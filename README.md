@@ -1,55 +1,59 @@
 # Laravel Rest
 
-This library provides tools and interfaces for working with REST API and using Laravel Models and Collections.
+![CI](https://github.com/sanchescom/laravel-rest/actions/workflows/ci.yml/badge.svg)
 
-## Installing
+Eloquent-like models and collections for consuming REST APIs.
 
-Require this package, with [Composer](https://getcomposer.org/), in the root directory of your project.
+Define a model, point it at an endpoint, and work with remote resources the way
+you work with Eloquent: `User::get()`, `User::get($id)`, `User::post([...])`,
+`$user->put()`, `User::delete($id)`.
 
-``` bash
-$ composer require sanchescom/laravel-rest
+## Requirements
+
+- PHP 8.2+
+- Laravel 11 or 12
+
+## Installation
+
+```bash
+composer require sanchescom/laravel-rest
 ```
 
-### Laravel:
-
-After updating composer, add the ServiceProvider to the providers array in `config/app.php`
-
- ```php
-'providers' => [
-    ...
-    Sanchescom\Rest\RestServiceProvider::class,
-],
-```
-
-### Lumen:
-
-After updating composer add the following lines to register provider in `bootstrap/app.php`
-
-```php
-$app->register(Sanchescom\Rest\RestServiceProvider::class);
-```
+The service provider is registered automatically via package auto-discovery —
+no manual registration needed.
 
 ## Configuration
 
-Change your default rest api name in `config/rest.php`:
+Publish the config file:
 
-```php
-'default' => env('REST_CLIENT', 'localhost'),
+```bash
+php artisan vendor:publish --tag=rest-config
 ```
 
-And add a new api configuration:
+Configure one or more clients in `config/rest.php`:
 
 ```php
 <?php
 
 return [
+    'default' => env('REST_CLIENT', 'localhost'),
+
     'clients' => [
         'localhost' => [
             'provider' => 'guzzle',
             'base_uri' => 'https://localhost/',
             'options' => [
                 'headers' => [
-                    'Content-Type' => 'application/json',
+                    'Accept' => 'application/json',
+                ],
+            ],
+        ],
+        'billing' => [
+            'provider' => 'guzzle',
+            'base_uri' => 'https://billing.example.com/api/',
+            'options' => [
+                'headers' => [
+                    'Authorization' => 'Bearer '.env('BILLING_TOKEN'),
                 ],
             ],
         ],
@@ -57,137 +61,174 @@ return [
 ];
 ```
 
-### Model
+> **Note:** `base_uri` must end with a trailing slash, and endpoints must not
+> start with one — that is how Guzzle resolves relative URIs.
 
-This package includes a Rest enabled Model class that you can use to define models for corresponding collections.
+## Defining Models
 
 ```php
 <?php
 
 use Sanchescom\Rest\Model;
 
-class User extends Model {
-    /** {@internal} */
-    protected $dataKey = 'data';
-
-    /** {@internal} */
-    protected $fillable = [
-        "id",
-        "first_name",
-        "last_name",
-        "email",
-    ];
-}
-```
-
-### Examples
-
-**URL** : `/api/users`
-
-**Content examples**
-
-For Users.
-
-```json
+class User extends Model
 {
-    "data": [
-        {
-            "id": 1,
-            "first_name": "Joe",
-            "last_name": "Bloggs",
-            "email": "joe25@example.com"
-        },
-        {
-            "id": 2,
-            "first_name": "Bob",
-            "last_name": "Jonson",
-            "email": "bob25@example.com"
-        }
-    ]
+    /** Client name from config/rest.php; null uses the default client. */
+    protected ?string $client = null;
+
+    /** Endpoint; defaults to the snake-cased plural of the class name ("users"). */
+    protected ?string $endpoint = 'users';
+
+    /** Key that wraps payloads in responses (e.g. {"data": ...}); null for bare payloads. */
+    protected ?string $dataKey = 'data';
+
+    /** Whitelist of fillable attributes; empty array allows everything. */
+    protected array $fillable = ['id', 'first_name', 'last_name', 'email'];
+
+    /** Attribute casts applied on read: int|float|bool|string. */
+    protected array $casts = ['id' => 'int'];
+
+    /** Per-model HTTP client options merged over the configured ones. */
+    protected array $options = [];
 }
 ```
 
-### Basic Usage
+## Usage
 
-**Retrieving All Models**
+**Retrieving all models**
 
 ```php
-$users = User::get();
+$users = User::get(); // Sanchescom\Rest\Collection of User
 ```
 
-**Retrieving A Record By Id**
+**Retrieving a record by id**
 
 ```php
-$user = User::get('1');
+$user = User::get(1); // User
 ```
 
-**Retrieving Records By Ida**
+**Retrieving several records by id**
 
 ```php
-$users = User::getMany(['1', '2']);
+$users = User::getMany([1, 2]); // results keep the order of the ids
 ```
 
-**Wheres**
+The result is an Illuminate collection, so all the usual methods work:
 
 ```php
-$users = User::get()->where('first_name', 'Bob');
+$bobs = User::get()->where('first_name', 'Bob');
 ```
 
-For more information check https://laravel.com/docs/collections
-
-### Inserts, updates and deletes
-
-**Saving a new model**
+**Creating**
 
 ```php
-User::post(['first_name' => 'Tim']);
+$user = User::post(['first_name' => 'Tim']);
 ```
 
-**Updating a model**
-
-To update a model, you may retrieve it, change an attribute, and use the put method.
+**Updating**
 
 ```php
-$user = User::get('2');
+// by key
+User::put(2, ['email' => 'john@foo.com']);
+
+// or via an instance using its own primary key
+$user = User::get(2);
 $user->email = 'john@foo.com';
 $user->put();
 ```
 
-Or updating a model by its key
+**Deleting**
 
 ```php
-User::put('2', ['email' => 'john@foo.com']);
-```
+User::delete(1);
 
-**Deleting a model**
-
-To delete a model, simply call the delete method on the instance:
-
-```php
-$user = User::get('1');
+// or via an instance
+$user = User::get(1);
 $user->delete();
 ```
 
-Or deleting a model by its key:
+## Error Handling
+
+Every 4xx/5xx response throws a typed exception; you never get a silent null:
+
+| Status | Exception |
+| --- | --- |
+| 404 | `Sanchescom\Rest\Exceptions\ModelNotFoundException` |
+| 422 | `Sanchescom\Rest\Exceptions\ValidationException` (`->errors()`) |
+| 500+ | `Sanchescom\Rest\Exceptions\ServerException` |
+| other 4xx | `Sanchescom\Rest\Exceptions\RequestException` |
+
+All of them extend `Sanchescom\Rest\Exceptions\RestException` and expose the
+request context: `$e->uri`, `$e->status`, `$e->body`.
 
 ```php
-User::delete('1');
+use Sanchescom\Rest\Exceptions\ValidationException;
+
+try {
+    User::post(['email' => 'not-an-email']);
+} catch (ValidationException $e) {
+    $errors = $e->errors();
+}
 ```
+
+## Pagination
+
+Collections can be paginated in memory:
+
+```php
+$paginator = User::get()->paginate(15); // Illuminate LengthAwarePaginator
+```
+
+## Testing Your Application
+
+Register a mock driver for the client used in tests:
+
+```php
+use GuzzleHttp\Client;
+use GuzzleHttp\Handler\MockHandler;
+use GuzzleHttp\HandlerStack;
+use GuzzleHttp\Psr7\Response;
+use Sanchescom\Rest\Clients\GuzzleClient;
+
+config()->set('rest.default', 'testing');
+config()->set('rest.clients.testing', ['provider' => 'mock']);
+
+app('rest')->extend('mock', function () {
+    $mock = new MockHandler([
+        new Response(200, [], '{"data":[{"id":1}]}'),
+    ]);
+
+    return new GuzzleClient(new Client([
+        'handler' => HandlerStack::create($mock),
+        'base_uri' => 'https://api.test/',
+        'http_errors' => false,
+    ]));
+});
+
+$users = User::get(); // served from the mock
+```
+
+## Upgrading from 0.x
+
+See [UPGRADE.md](UPGRADE.md) — 1.0 contains breaking changes.
 
 ## Contributing
 
-Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct, and the process for submitting pull requests to us.
+Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of
+conduct, and the process for submitting pull requests to us.
 
 ## Versioning
 
-We use [SemVer](http://semver.org/) for versioning. For the versions available, see the [tags on this repository](https://github.com/sanchescom/php-wifi/tags). 
+We use [SemVer](http://semver.org/) for versioning. For the versions available,
+see the [tags on this repository](https://github.com/sanchescom/laravel-rest/tags).
 
 ## Authors
 
 * **Efimov Aleksandr** - *Initial work* - [Sanchescom](https://github.com/sanchescom)
 
-See also the list of [contributors](https://github.com/sanchescom/php-wifi/contributors) who participated in this project.
+See also the list of [contributors](https://github.com/sanchescom/laravel-rest/contributors)
+who participated in this project.
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details
+This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details.

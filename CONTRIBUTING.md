@@ -2,11 +2,13 @@
 
 Contributions are **welcome** and will be fully **credited**.
 
-We accept contributions via Pull Requests on [Github](https://github.com/sanchescom/php-wifi).
+We accept contributions via Pull Requests on [Github](https://github.com/sanchescom/laravel-rest).
 
 ## Pull Requests
 
-- **[PSR-2 Coding Standard](https://github.com/php-fig/fig-standards/blob/master/accepted/PSR-2-coding-style-guide.md)** - Check the code style with ``$ composer check-style`` and fix it with ``$ composer fix-style``.
+- **Code style** - Laravel Pint enforces the style: check with `composer lint`, fix with `composer fix`.
+
+- **Static analysis** - `composer analyse` (PHPStan level 6) must pass.
 
 - **Add tests!** - Your patch won't be accepted if it doesn't have tests.
 
@@ -27,18 +29,18 @@ You will need an install of [Composer](https://getcomposer.org) before continuin
 First, install the dependencies:
 
 ```bash
-$ composer install
+composer install
 ```
 
-Then run PHPUnit:
+Then run the suite:
 
 ```bash
-$ vendor/bin/phpunit
+composer test
 ```
 
 If the test suite passes on your local machine you should be good to go.
 
-When you make a pull request, the tests will automatically be run again by [Travis CI](https://travis-ci.org/) on multiple PHP versions.
-
+When you make a pull request, the tests will automatically be run again by
+GitHub Actions on multiple PHP and Laravel versions.
 
 **Happy coding**!
