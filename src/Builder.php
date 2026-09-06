@@ -131,19 +131,26 @@ final class Builder
     /**
      * @param  array<string, mixed>  $data
      */
-    public function post(array $data = []): Model
+    public function post(array $data = []): ?Model
     {
-        $attributes = $this->model->fill($data)->getAttributes();
+        $model = $this->model->fill($data);
 
-        $payload = $this->decode($this->client()->post($this->uri(), $attributes));
+        if (! $model->fireModelEvent('creating')) {
+            return null;
+        }
 
-        return $this->model->newInstance($this->extract($payload));
+        $payload = $this->decode($this->client()->post($this->uri(), $model->getAttributes()));
+
+        $created = $this->model->newInstance($this->extract($payload));
+        $created->fireModelEvent('created');
+
+        return $created;
     }
 
     /**
      * @param  array<string, mixed>  $data
      */
-    public function put(string|int|null $id = null, array $data = []): Model
+    public function put(string|int|null $id = null, array $data = []): ?Model
     {
         $id ??= $this->model->getKey();
 
@@ -151,11 +158,18 @@ final class Builder
             throw new RestException('Cannot update a model without an id or primary key value.');
         }
 
-        $attributes = $this->model->fill($data)->getAttributes();
+        $model = $this->model->fill($data);
 
-        $payload = $this->decode($this->client()->put($this->uri($id), $attributes));
+        if (! $model->fireModelEvent('updating')) {
+            return null;
+        }
 
-        return $this->model->newInstance($this->extract($payload));
+        $payload = $this->decode($this->client()->put($this->uri($id), $model->getAttributes()));
+
+        $updated = $this->model->newInstance($this->extract($payload));
+        $updated->fireModelEvent('updated');
+
+        return $updated;
     }
 
     public function delete(string|int|null $id = null): bool
@@ -166,7 +180,13 @@ final class Builder
             throw new RestException('Cannot delete a model without an id or primary key value.');
         }
 
+        if (! $this->model->fireModelEvent('deleting')) {
+            return false;
+        }
+
         $this->client()->delete($this->uri($id));
+
+        $this->model->fireModelEvent('deleted');
 
         return true;
     }

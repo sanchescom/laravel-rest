@@ -29,5 +29,9 @@ class RestServiceProvider extends ServiceProvider
         ], 'rest-config');
 
         Model::setClientResolver($this->app->make(ClientResolverInterface::class));
+
+        if ($this->app->bound('events')) {
+            Model::setEventDispatcher($this->app->make('events'));
+        }
     }
 }

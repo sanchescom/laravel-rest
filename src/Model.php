@@ -18,8 +18,8 @@ use Sanchescom\Rest\Query\PlainGrammar;
  *
  * @method static Model|Collection<int, static> get(string|int|null $id = null)
  * @method static Collection<int, static> getMany(array<int, string|int|null> $ids)
- * @method static Model post(array<string, mixed> $data = [])
- * @method static Model put(string|int|null $id = null, array<string, mixed> $data = [])
+ * @method static Model|null post(array<string, mixed> $data = [])
+ * @method static Model|null put(string|int|null $id = null, array<string, mixed> $data = [])
  * @method static bool delete(string|int|null $id = null)
  * @method static Builder where(string $field, mixed $operator = null, mixed $value = null)
  * @method static Builder orderBy(string $field, string $direction = 'asc')
@@ -35,6 +35,11 @@ use Sanchescom\Rest\Query\PlainGrammar;
 class Model implements Arrayable, ArrayAccess, JsonSerializable
 {
     protected static ?ClientResolverInterface $resolver = null;
+
+    /** @var array<class-string, array<string, list<callable>>> */
+    protected static array $eventListeners = [];
+
+    protected static ?object $eventDispatcher = null;
 
     protected ?string $client = null;
 
@@ -245,6 +250,73 @@ class Model implements Arrayable, ArrayAccess, JsonSerializable
     public function newCollection(array $models = []): Collection
     {
         return new Collection($models);
+    }
+
+    public static function creating(callable $listener): void
+    {
+        static::registerModelEvent('creating', $listener);
+    }
+
+    public static function created(callable $listener): void
+    {
+        static::registerModelEvent('created', $listener);
+    }
+
+    public static function updating(callable $listener): void
+    {
+        static::registerModelEvent('updating', $listener);
+    }
+
+    public static function updated(callable $listener): void
+    {
+        static::registerModelEvent('updated', $listener);
+    }
+
+    public static function deleting(callable $listener): void
+    {
+        static::registerModelEvent('deleting', $listener);
+    }
+
+    public static function deleted(callable $listener): void
+    {
+        static::registerModelEvent('deleted', $listener);
+    }
+
+    protected static function registerModelEvent(string $event, callable $listener): void
+    {
+        static::$eventListeners[static::class][$event][] = $listener;
+    }
+
+    public static function flushEventListeners(): void
+    {
+        unset(static::$eventListeners[static::class]);
+    }
+
+    public static function setEventDispatcher(?object $dispatcher): void
+    {
+        static::$eventDispatcher = $dispatcher;
+    }
+
+    public function fireModelEvent(string $event): bool
+    {
+        foreach (static::$eventListeners[static::class][$event] ?? [] as $listener) {
+            if ($listener($this) === false) {
+                return false;
+            }
+        }
+
+        $bridge = match ($event) {
+            'created' => Events\ModelCreated::class,
+            'updated' => Events\ModelUpdated::class,
+            'deleted' => Events\ModelDeleted::class,
+            default => null,
+        };
+
+        if ($bridge !== null && static::$eventDispatcher !== null && method_exists(static::$eventDispatcher, 'dispatch')) {
+            static::$eventDispatcher->dispatch(new $bridge($this));
+        }
+
+        return true;
     }
 
     /**
