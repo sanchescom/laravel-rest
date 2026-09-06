@@ -1,6 +1,6 @@
 # Capability Matrix
 
-What laravel-rest supports as of 1.1.0 — and what it deliberately does not.
+What laravel-rest supports as of 1.2.0 — and what it deliberately does not.
 
 | Area | Supported | Not supported (workaround) |
 | --- | --- | --- |
@@ -14,6 +14,7 @@ What laravel-rest supports as of 1.1.0 — and what it deliberately does not.
 | Envelopes | any `dataKey` (dot notation via `Arr::get`) | per-endpoint different keys on one model |
 | Relations | hasMany/hasOne (FK filter or nested URL), belongsTo | many-to-many, eager loading (`getMany` helps), embedded includes |
 | Events | creating/created/updating/updated/deleting/deleted, cancellation, Laravel bridge | wildcard observers |
+| Caching | PSR-16 GET caching, versioned invalidation, per-model (`$cacheTtl`) and per-chain (`withCache()`/`withoutCache()`) opt-in | HTTP ETag/Cache-Control (planned), per-client stores, cache tags |
 | Testing | `Rest::fake()` with patterns + assertions, fixture server pattern | — |
 
 ## Live Verification

@@ -266,6 +266,148 @@ class Article extends Model
 Grammars implement `Sanchescom\Rest\Query\Grammar` — use a custom class for
 any other query convention. See [docs/capabilities.md](docs/capabilities.md).
 
+## Caching
+
+laravel-rest can cache GET responses so that repeat reads within a TTL window
+cost zero HTTP round-trips. Caching is opt-in per model or per chain; write
+operations always pass through and automatically invalidate the model's cache on
+success.
+
+### Quick start — Laravel app
+
+Publish the config and enable the cache store you want (any configured Laravel
+cache store works):
+
+```php
+// config/rest.php
+'cache' => [
+    'store' => null,   // null = default Laravel store; 'redis', 'memcached', etc.
+    'ttl'   => 300,    // default TTL in seconds used by withCache() without args
+],
+```
+
+Set `'cache' => false` to skip store wiring entirely (no `Model::setCacheStore`
+call is made at boot).
+
+Then enable caching on the models you want cached:
+
+```php
+class Post extends Model
+{
+    protected ?int $cacheTtl = 60; // seconds; null (default) = caching disabled
+}
+```
+
+### Per-chain opt-in and opt-out
+
+Any chain can override the model setting:
+
+```php
+// Enable caching for one chain (uses model $cacheTtl, or default TTL if not set)
+Post::withCache()->get();
+
+// Use a specific TTL just for this chain
+Post::withCache(30)->get();
+
+// Force a fresh hit even if the model has $cacheTtl
+Post::withoutCache()->get();
+```
+
+### Page-flip scenario — zero HTTP on repeat
+
+Because cache keys encode `client | model | version | uri | compiled-query`,
+every unique page is cached independently. Flipping back to a page that was
+already fetched costs nothing:
+
+```php
+$page1a = Post::withCache()->page(1)->get(); // HTTP request
+$page2  = Post::withCache()->page(2)->get(); // HTTP request
+$page1b = Post::withCache()->page(1)->get(); // cache hit — zero HTTP
+```
+
+### Write-through invalidation
+
+Successful `post`, `put`, and `delete` calls bump the model's internal cache
+version, making all previously cached entries for that model stale. The next
+read transparently refetches from the API.
+
+Cancelled writes (a `creating`/`updating`/`deleting` listener returning `false`)
+do **not** bump the version.
+
+```php
+Post::post(['title' => 'New']);  // POST + flushCache() on success
+Post::put(1, ['title' => 'Hi']); // PUT  + flushCache() on success
+Post::delete(1);                 // DELETE + flushCache() on success
+```
+
+You can also flush explicitly at any time (O(1) version bump — does not iterate
+cache keys):
+
+```php
+Post::flushCache(); // safe no-op when no store is configured
+```
+
+> **External mutations are invisible.** If another service creates, updates, or
+> deletes records via the same API, this package has no way to know. Keep `$cacheTtl`
+> short enough for your consistency requirements, or call `Post::flushCache()`
+> when you know a mutation happened externally.
+
+### Fail loud — no silent cache misses
+
+If caching is requested (via `$cacheTtl` or `withCache()`) but no store has
+been configured, the builder throws a `RestException` immediately rather than
+silently falling back to a live request:
+
+```php
+Model::setCacheStore(null);
+CachedPost::get(); // throws RestException: "no cache store configured"
+```
+
+### Standalone use (outside Laravel)
+
+Wire the store directly — any PSR-16 `CacheInterface` works:
+
+```php
+use Symfony\Component\Cache\Adapter\FilesystemAdapter;
+use Symfony\Component\Cache\Psr16Cache;
+use Sanchescom\Rest\Model;
+
+Model::setCacheStore(
+    new Psr16Cache(new FilesystemAdapter),
+    defaultTtl: 120,
+);
+
+// Now any model with $cacheTtl or withCache() will use the file cache
+Post::withCache(60)->get(1);
+```
+
+`psr/simple-cache` is a suggested dependency; install it alongside whichever
+PSR-16 adapter you choose.
+
+### Testing with fakes
+
+`Rest::fake()` and caching compose correctly. The fake is the inner client;
+`CachingClient` wraps it. Use `Rest::assertSentCount()` to prove cache hits
+(only the first call is forwarded to the fake):
+
+```php
+use Sanchescom\Rest\Rest;
+use Sanchescom\Rest\Model;
+
+Model::setCacheStore(new \Sanchescom\Rest\Tests\Support\ArrayCache);
+
+Rest::fake(['posts' => Rest::response([['id' => 1]])]);
+
+Post::withCache()->page(1)->get();
+Post::withCache()->page(2)->get();
+Post::withCache()->page(1)->get(); // cache hit
+
+Rest::assertSentCount(2); // page1 + page2 — page1 repeat was served from cache
+
+Rest::restore();
+Model::setCacheStore(null);
+```
+
 ## Relations
 
 Three relation types, all lazy-loaded and per-instance cached on first access:
@@ -485,8 +627,6 @@ Post::get(1); // works — no Laravel container involved
 
 See [docs/capabilities.md](docs/capabilities.md) for a full breakdown of what
 is supported, what is not, and how to extend it.
-
-**Planned for 1.2:** response caching.
 
 ## Upgrading
 

@@ -4,6 +4,35 @@ All notable changes to this project will be documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/) and this
 project adheres to [Semantic Versioning](https://semver.org/).
 
+## 1.2.0
+
+### Added
+
+- **Response caching** — PSR-16-backed GET cache. Enable per model with
+  `protected ?int $cacheTtl = <seconds>` or per chain with
+  `withCache(?int $ttl = null)` / `withoutCache()`.
+- **`Model::setCacheStore(?CacheInterface $store, int $defaultTtl = 300)`** —
+  registers the PSR-16 store used by all models; called automatically at boot
+  from `config/rest.php` `cache.store` / `cache.ttl` when running inside
+  Laravel. Set `'cache' => false` to skip wiring.
+- **`Model::flushCache()`** — O(1) version-key bump that atomically invalidates
+  all cached entries for that model class. Safe no-op when no store is set.
+- **Write-through invalidation** — successful `post`, `put`, and `delete` calls
+  automatically call `flushCache()` on the model. Cancelled writes (event
+  listener returns `false`) do not flush.
+- **`CachingClient`** — internal decorator (`src/Cache/CachingClient.php`) that
+  wraps any `ClientInterface`. Cache keys encode
+  `client | model | version | uri | compiled-query` so each page, filter
+  combination, and model class gets its own entry.
+- **`Rest::fake()` interplay** — the fake is the inner client; `CachingClient`
+  wraps it, so `Rest::assertSentCount()` reflects actual HTTP traffic and proves
+  cache hits.
+
+### No breaking changes
+
+1.2 is fully additive. Existing models without `$cacheTtl` and existing chains
+without `withCache()` are unaffected.
+
 ## 1.1.0
 
 ### Added

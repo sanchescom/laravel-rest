@@ -1,5 +1,11 @@
 # Upgrade Guide
 
+## 1.1 → 1.2
+
+1.2 is fully additive — no breaking changes. To enable caching, add `$cacheTtl`
+to any model and ensure `config/rest.php` has a `cache` block (it ships with
+`['store' => null, 'ttl' => 300]` by default).
+
 ## 1.0 → 1.1
 
 ### `Builder::post()` and `Builder::put()` return `?Model`
