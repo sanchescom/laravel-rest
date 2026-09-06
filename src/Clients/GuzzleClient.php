@@ -54,13 +54,29 @@ final class GuzzleClient implements ClientInterface
         $driver = $auth['driver'] ?? null;
 
         return match ($driver) {
-            'bearer' => new BearerAuth((string) $auth['token']),
-            'basic' => new BasicAuth((string) $auth['username'], (string) $auth['password']),
-            'header' => new HeaderAuth((array) $auth['headers']),
+            'bearer' => new BearerAuth(self::requireString($auth, 'token', 'bearer')),
+            'basic' => new BasicAuth(self::requireString($auth, 'username', 'basic'), self::requireString($auth, 'password', 'basic')),
+            'header' => isset($auth['headers']) && is_array($auth['headers']) && $auth['headers'] !== []
+                ? new HeaderAuth($auth['headers'])
+                : throw new InvalidArgumentException('Auth driver [header] requires a non-empty [headers] array.'),
             default => is_string($driver) && is_a($driver, AuthInterface::class, true)
                 ? new $driver($auth)
                 : throw new InvalidArgumentException("Unsupported auth driver [{$driver}]."),
         };
+    }
+
+    /**
+     * @param  array<string, mixed>  $auth
+     */
+    private static function requireString(array $auth, string $key, string $driver): string
+    {
+        $value = $auth[$key] ?? null;
+
+        if (! is_string($value) || $value === '') {
+            throw new InvalidArgumentException("Auth driver [{$driver}] requires a non-empty [{$key}] string.");
+        }
+
+        return $value;
     }
 
     /**
