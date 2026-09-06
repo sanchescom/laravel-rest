@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Sanchescom\Rest\Clients;
 
 use GuzzleHttp\Client;
+use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Middleware;
 use GuzzleHttp\Pool;
@@ -37,6 +38,10 @@ final class GuzzleClient implements ClientInterface
             ), 'rest_auth');
         }
 
+        if (isset($config['retry'])) {
+            $stack->push(self::retryMiddleware($config['retry']), 'rest_retry');
+        }
+
         $options = array_merge($options, [
             'handler' => $stack,
             'base_uri' => $config['base_uri'] ?? null,
@@ -44,6 +49,39 @@ final class GuzzleClient implements ClientInterface
         ]);
 
         return new self(new Client($options));
+    }
+
+    /**
+     * @param  array<string, mixed>  $retry
+     */
+    private static function retryMiddleware(array $retry): callable
+    {
+        $times = (int) $retry['times'];
+        $delay = (int) ($retry['delay'] ?? 100);
+        $multiplier = (float) ($retry['multiplier'] ?? 2.0);
+        $statuses = (array) ($retry['statuses'] ?? [429, 500, 502, 503, 504]);
+        $respectRetryAfter = (bool) ($retry['respect_retry_after'] ?? true);
+
+        return Middleware::retry(
+            function (int $attempt, $request, $response = null, $exception = null) use ($times, $statuses): bool {
+                if ($attempt >= $times) {
+                    return false;
+                }
+
+                if ($exception instanceof ConnectException) {
+                    return true;
+                }
+
+                return $response !== null && in_array($response->getStatusCode(), $statuses, true);
+            },
+            function (int $attempt, $response = null) use ($delay, $multiplier, $respectRetryAfter): int {
+                if ($respectRetryAfter && $response !== null && $response->hasHeader('Retry-After')) {
+                    return (int) $response->getHeaderLine('Retry-After') * 1000;
+                }
+
+                return (int) ($delay * ($multiplier ** ($attempt - 1)));
+            },
+        );
     }
 
     /**
