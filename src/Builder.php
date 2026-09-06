@@ -163,6 +163,7 @@ final class Builder
 
         $created = $this->model->newInstance($this->extract($payload));
         $created->fireModelEvent('created');
+        ($this->model)::flushCache();
 
         return $created;
     }
@@ -188,6 +189,7 @@ final class Builder
 
         $updated = $this->model->newInstance($this->extract($payload));
         $updated->fireModelEvent('updated');
+        ($this->model)::flushCache();
 
         return $updated;
     }
@@ -207,6 +209,7 @@ final class Builder
         $this->client()->delete($this->uri($id));
 
         $this->model->fireModelEvent('deleted');
+        ($this->model)::flushCache();
 
         return true;
     }
