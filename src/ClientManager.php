@@ -92,4 +92,13 @@ class ClientManager implements ClientResolverInterface
 
         return is_string($grammar) ? $grammar : null;
     }
+
+    public function queryConfig(?string $name = null): array|string|null
+    {
+        $name ??= $this->getDefaultClient();
+
+        $query = $this->config->get("rest.clients.{$name}.query");
+
+        return is_array($query) || is_string($query) ? $query : null;
+    }
 }

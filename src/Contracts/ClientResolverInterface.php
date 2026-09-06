@@ -17,4 +17,11 @@ interface ClientResolverInterface
      * @return class-string|null
      */
     public function grammar(?string $name = null): ?string;
+
+    /**
+     * Query convention config for the client (array, preset string, or null).
+     *
+     * @return array<string, mixed>|string|null
+     */
+    public function queryConfig(?string $name = null): array|string|null;
 }

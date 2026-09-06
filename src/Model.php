@@ -12,6 +12,7 @@ use Psr\SimpleCache\CacheInterface;
 use Sanchescom\Rest\Cache\CacheKeys;
 use Sanchescom\Rest\Contracts\ClientInterface;
 use Sanchescom\Rest\Contracts\ClientResolverInterface;
+use Sanchescom\Rest\Query\ConfigurableGrammar;
 use Sanchescom\Rest\Query\PlainGrammar;
 
 /**
@@ -334,10 +335,19 @@ class Model implements Arrayable, ArrayAccess, JsonSerializable
     public function newBuilder(): Builder
     {
         $grammarClass = $this->grammar
-            ?? (static::$resolver !== null ? static::$resolver->grammar($this->client) : null)
-            ?? PlainGrammar::class;
+            ?? (static::$resolver?->grammar($this->client));
 
-        return new Builder($this, new $grammarClass);
+        if ($grammarClass !== null) {
+            return new Builder($this, new $grammarClass);
+        }
+
+        $queryConfig = static::$resolver?->queryConfig($this->client);
+
+        if ($queryConfig !== null) {
+            return new Builder($this, ConfigurableGrammar::fromConfig($queryConfig));
+        }
+
+        return new Builder($this, new PlainGrammar);
     }
 
     /**

@@ -15,6 +15,9 @@ class ClientResolver implements ClientResolverInterface
     /** @var array<string, string> */
     protected array $grammars = [];
 
+    /** @var array<string, array<string, mixed>|string> */
+    protected array $queryConfigs = [];
+
     /**
      * @param  array<string, ClientInterface>  $clients
      */
@@ -57,5 +60,18 @@ class ClientResolver implements ClientResolverInterface
     public function grammar(?string $name = null): ?string
     {
         return $this->grammars[$name ?? $this->default ?? ''] ?? null;
+    }
+
+    /**
+     * @param  array<string, mixed>|string  $config
+     */
+    public function setQueryConfig(string $client, array|string $config): void
+    {
+        $this->queryConfigs[$client] = $config;
+    }
+
+    public function queryConfig(?string $name = null): array|string|null
+    {
+        return $this->queryConfigs[$name ?? $this->default ?? ''] ?? null;
     }
 }

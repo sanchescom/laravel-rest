@@ -51,6 +51,11 @@ final class Rest
             {
                 return null;
             }
+
+            public function queryConfig(?string $name = null): array|string|null
+            {
+                return null;
+            }
         });
 
         return $fake;
