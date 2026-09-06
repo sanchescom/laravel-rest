@@ -271,7 +271,7 @@ any other query convention. See [docs/capabilities.md](docs/capabilities.md).
 laravel-rest can cache GET responses so that repeat reads within a TTL window
 cost zero HTTP round-trips. Caching is opt-in per model or per chain; write
 operations always pass through and automatically invalidate the model's cache on
-success.
+success. Both get() and getMany() are cached; write methods always go to the API.
 
 ### Quick start — Laravel app
 
@@ -394,6 +394,7 @@ PSR-16 adapter you choose.
 use Sanchescom\Rest\Rest;
 use Sanchescom\Rest\Model;
 
+// ArrayCache is a test double from this package's tests/ — in your app wire any PSR-16 store instead
 Model::setCacheStore(new \Sanchescom\Rest\Tests\Support\ArrayCache);
 
 Rest::fake(['posts' => Rest::response([['id' => 1]])]);

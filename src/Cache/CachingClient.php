@@ -8,6 +8,7 @@ use GuzzleHttp\Psr7\Response;
 use Psr\Http\Message\ResponseInterface;
 use Psr\SimpleCache\CacheInterface;
 use Sanchescom\Rest\Contracts\ClientInterface;
+use Sanchescom\Rest\Exceptions\RestException;
 
 final class CachingClient implements ClientInterface
 {
@@ -63,7 +64,9 @@ final class CachingClient implements ClientInterface
         $ordered = [];
 
         foreach (array_keys($uris) as $index) {
-            $ordered[$index] = $hits[$index] ?? $fetched[$index];
+            $ordered[$index] = $hits[$index]
+                ?? $fetched[$index]
+                ?? throw new RestException("Client returned no response for [{$uris[$index]}].");
         }
 
         return $ordered;
@@ -107,7 +110,11 @@ final class CachingClient implements ClientInterface
             'body' => (string) $response->getBody(),
         ], $this->ttl);
 
-        $response->getBody()->rewind();
+        $body = $response->getBody();
+
+        if ($body->isSeekable()) {
+            $body->rewind();
+        }
 
         return $response;
     }

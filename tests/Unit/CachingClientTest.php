@@ -7,6 +7,7 @@ use Sanchescom\Rest\Cache\CacheKeys;
 use Sanchescom\Rest\Cache\CachingClient;
 use Sanchescom\Rest\Contracts\ClientInterface;
 use Sanchescom\Rest\Exceptions\RequestException;
+use Sanchescom\Rest\Exceptions\RestException;
 use Sanchescom\Rest\Tests\Support\ArrayCache;
 
 function cachingClient(ClientInterface $inner, ArrayCache $cache, int $ttl = 60): CachingClient
@@ -91,6 +92,14 @@ it('composes getMany from partial cache hits in input order', function () {
         ->and((string) $responses[0]->getBody())->toBe('{"id":1}')
         ->and((string) $responses[1]->getBody())->toBe('{"id":2}');
 });
+
+it('fails loud when the inner client drops a getMany uri', function () {
+    $inner = Mockery::mock(ClientInterface::class);
+    $inner->shouldReceive('getMany')->once()->andReturn([]);
+    $cache = new ArrayCache;
+
+    cachingClient($inner, $cache)->getMany(['posts/1']);
+})->throws(RestException::class);
 
 it('passes writes through untouched', function () {
     $inner = Mockery::mock(ClientInterface::class);
