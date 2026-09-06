@@ -183,10 +183,27 @@ class Model implements Arrayable, ArrayAccess, JsonSerializable
         return new Relations\BelongsTo($this, $related, $foreignKey);
     }
 
+    protected function isRelationMethod(string $key): bool
+    {
+        if (! method_exists($this, $key)) {
+            return false;
+        }
+
+        $returnType = (new \ReflectionMethod($this, $key))->getReturnType();
+
+        return $returnType instanceof \ReflectionNamedType
+            && ! $returnType->isBuiltin()
+            && is_a($returnType->getName(), Relations\Relation::class, true);
+    }
+
     public function __get(string $key): mixed
     {
-        if (! array_key_exists($key, $this->attributes) && method_exists($this, $key)) {
-            return $this->loadedRelations[$key] ??= $this->{$key}()->getResults();
+        if (! array_key_exists($key, $this->attributes) && $this->isRelationMethod($key)) {
+            if (array_key_exists($key, $this->loadedRelations)) {
+                return $this->loadedRelations[$key];
+            }
+
+            return $this->loadedRelations[$key] = $this->{$key}()->getResults();
         }
 
         return $this->getAttribute($key);

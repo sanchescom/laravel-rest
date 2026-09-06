@@ -96,3 +96,20 @@ it('returns null belongsTo when fk is absent', function () {
     expect((new RelPost(['id' => 1]))->author)->toBeNull();
     Rest::assertSentCount(0);
 });
+
+it('returns null belongsTo repeatedly without http', function () {
+    Rest::fake(['users/*' => Rest::response([])]);
+
+    $post = new RelPost(['id' => 1]);
+
+    expect($post->author)->toBeNull()
+        ->and($post->author)->toBeNull();
+    Rest::assertSentCount(0);
+});
+
+it('does not treat regular model methods as relations', function () {
+    Rest::fake([]);
+
+    expect((new RelPost(['id' => 1]))->fill)->toBeNull();
+    Rest::assertSentCount(0);
+});
