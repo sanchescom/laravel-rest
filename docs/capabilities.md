@@ -9,7 +9,7 @@ What laravel-rest supports as of 1.1.0 — and what it deliberately does not.
 | Sorting | `sort=-date,name` (plain and JSON:API) | per-API sort keys (use `withQuery()`) |
 | Pagination | query params: `limit/offset/page`, `page[size]/page[number]` | Link-header, cursor tokens (use `withQuery()` manually) |
 | Auth | bearer, basic, arbitrary headers, custom `AuthInterface` | OAuth2 token acquisition/refresh (attach ready tokens only) |
-| Retry | status-based with exponential backoff and `Retry-After` | circuit breakers, jitter |
+| Retry | status-based with exponential backoff and `Retry-After` (integer seconds) | HTTP-date form of `Retry-After` (workaround: exponential backoff), circuit breakers, jitter |
 | Errors | 404/422/5xx/4xx typed exceptions, JSON bodies | non-JSON error bodies are preserved as empty `body` |
 | Envelopes | any `dataKey` (dot notation via `Arr::get`) | per-endpoint different keys on one model |
 | Relations | hasMany/hasOne (FK filter or nested URL), belongsTo | many-to-many, eager loading (`getMany` helps), embedded includes |
