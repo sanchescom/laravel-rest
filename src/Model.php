@@ -204,6 +204,11 @@ class Model implements Arrayable, ArrayAccess, JsonSerializable
         static::$resolver = $resolver;
     }
 
+    public static function getClientResolver(): ?ClientResolverInterface
+    {
+        return isset(static::$resolver) ? static::$resolver : null;
+    }
+
     public function getClient(): ClientInterface
     {
         return static::$resolver->client($this->client, $this->options);
