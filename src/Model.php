@@ -56,6 +56,9 @@ class Model implements Arrayable, ArrayAccess, JsonSerializable
     /** @var array<string, mixed> */
     protected array $attributes = [];
 
+    /** @var array<string, mixed> */
+    protected array $loadedRelations = [];
+
     /** @var array<int, string> */
     protected array $fillable = [];
 
@@ -156,8 +159,36 @@ class Model implements Arrayable, ArrayAccess, JsonSerializable
         return $this->getAttribute($this->getKeyName());
     }
 
+    /**
+     * @param  class-string<self>  $related
+     */
+    public function hasMany(string $related, ?string $foreignKey = null): Relations\HasMany
+    {
+        return new Relations\HasMany($this, $related, $foreignKey);
+    }
+
+    /**
+     * @param  class-string<self>  $related
+     */
+    public function hasOne(string $related, ?string $foreignKey = null): Relations\HasOne
+    {
+        return new Relations\HasOne($this, $related, $foreignKey);
+    }
+
+    /**
+     * @param  class-string<self>  $related
+     */
+    public function belongsTo(string $related, ?string $foreignKey = null): Relations\BelongsTo
+    {
+        return new Relations\BelongsTo($this, $related, $foreignKey);
+    }
+
     public function __get(string $key): mixed
     {
+        if (! array_key_exists($key, $this->attributes) && method_exists($this, $key)) {
+            return $this->loadedRelations[$key] ??= $this->{$key}()->getResults();
+        }
+
         return $this->getAttribute($key);
     }
 
