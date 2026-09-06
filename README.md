@@ -221,9 +221,217 @@ Collections can be paginated in memory:
 $paginator = User::get()->paginate(15); // Illuminate LengthAwarePaginator
 ```
 
+## Query Builder
+
+Filter, sort, and paginate without writing query strings by hand:
+
+```php
+// Plain grammar (default) — ?status=active&sort=-created_at&limit=20
+$posts = Post::where('status', 'active')
+    ->orderBy('created_at', 'desc')
+    ->limit(20)
+    ->get();
+
+// Pagination
+Post::page(2)->limit(15)->get();   // ?page=2&limit=15
+Post::offset(30)->limit(15)->get(); // ?offset=30&limit=15
+
+// Extra / non-standard params
+Post::withQuery(['include' => 'author'])->get();
+
+// Convenience
+Post::where('status', 'draft')->first(); // first item of the collection
+Post::where('userId', 1)->count();       // count of matching items
+```
+
+**JSON:API grammar** — produces `filter[field]`, `page[size]`, `page[number]`:
+
+```php
+// Per-client (config/rest.php):
+'clients' => [
+    'myapi' => [
+        'provider' => 'guzzle',
+        'base_uri'  => 'https://api.example.com/',
+        'grammar'   => \Sanchescom\Rest\Query\JsonApiGrammar::class,
+    ],
+],
+
+// Per-model (overrides the client-level setting):
+class Article extends Model
+{
+    protected ?string $grammar = \Sanchescom\Rest\Query\JsonApiGrammar::class;
+}
+```
+
+Grammars implement `Sanchescom\Rest\Query\Grammar` — use a custom class for
+any other query convention. See [docs/capabilities.md](docs/capabilities.md).
+
+## Relations
+
+Three relation types, all lazy-loaded and per-instance cached on first access:
+
+```php
+class Post extends Model
+{
+    // FK filter: GET comments?postId=1
+    public function comments(): \Sanchescom\Rest\Relations\HasMany
+    {
+        return $this->hasMany(Comment::class);
+    }
+
+    // Nested URL: GET posts/1/thumbnail
+    public function thumbnail(): \Sanchescom\Rest\Relations\HasOne
+    {
+        return $this->hasOne(Thumbnail::class)->nested();
+    }
+
+    // Parent lookup: GET users/{post->userId}
+    public function author(): \Sanchescom\Rest\Relations\BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+}
+
+$post = Post::get(1);
+$post->comments;          // Collection<Comment>  — loaded once, cached
+$post->thumbnail;         // ?Thumbnail
+$post->author;            // ?User
+
+// Relations also chain onto the builder:
+$post->comments()->where('approved', true)->get();
+```
+
+Foreign-key name defaults to camelCase class name + `Id`
+(`postId` for `Post`, `userId` for `User`). Pass the key explicitly to
+override: `$this->hasMany(Comment::class, 'post_id')`.
+
+## Authentication
+
+Configure an `auth` block inside a client entry:
+
+```php
+// Bearer token
+'auth' => ['driver' => 'bearer', 'token' => env('API_TOKEN')],
+
+// HTTP Basic
+'auth' => ['driver' => 'basic', 'username' => '…', 'password' => '…'],
+
+// Arbitrary header(s) — name must match what the API expects exactly
+'auth' => [
+    'driver'  => 'header',
+    'headers' => ['X-API-Key' => env('API_KEY')],
+],
+
+// Custom driver — any class implementing AuthInterface
+'auth' => ['driver' => \App\Auth\HmacAuth::class, 'secret' => env('HMAC_SECRET')],
+```
+
+Custom drivers receive the full `auth` config array as the constructor
+argument and must implement `Sanchescom\Rest\Auth\AuthInterface`.
+
+An `InvalidArgumentException` is thrown immediately on boot for unknown
+drivers or missing required keys, not at request time.
+
+## Retry
+
+Add a `retry` block to a client config:
+
+```php
+'retry' => [
+    'times'              => 3,       // max attempts (excluding the first)
+    'delay'              => 100,     // base delay in ms
+    'multiplier'         => 2.0,     // exponential multiplier
+    'statuses'           => [429, 500, 502, 503, 504],
+    'respect_retry_after' => true,   // honour Retry-After response header
+],
+```
+
+Connection errors (`ConnectException`) are always retried regardless of
+`statuses`. There is no circuit breaker or jitter — reach out or open a PR if
+you need either.
+
+## Model Events
+
+Six hooks fire around write operations. Returning `false` from a `creating`,
+`updating`, or `deleting` listener cancels the operation (`post`/`put` return
+`null`; `delete` returns `false`):
+
+```php
+Post::creating(function (Post $post): bool|void {
+    if ($post->title === '') {
+        return false; // cancel
+    }
+});
+
+Post::created(function (Post $post): void {
+    Cache::forget('posts');
+});
+
+Post::updating(fn (Post $post) => /* return false to cancel */ null);
+Post::updated(fn (Post $post) => null);
+Post::deleting(fn (Post $post) => /* return false to cancel */ null);
+Post::deleted(fn (Post $post) => null);
+```
+
+**Laravel event dispatcher bridge** — if you set a dispatcher on the model,
+`created`, `updated`, and `deleted` also dispatch
+`Sanchescom\Rest\Events\ModelCreated`,
+`Sanchescom\Rest\Events\ModelUpdated`, and
+`Sanchescom\Rest\Events\ModelDeleted` (each carries the model as a public
+`$model` property):
+
+```php
+use Illuminate\Events\Dispatcher;
+
+Model::setEventDispatcher(app(Dispatcher::class));
+```
+
+Clear listeners between tests with `Post::flushEventListeners()`.
+
 ## Testing Your Application
 
-Register a mock driver for the client used in tests:
+`Rest::fake()` is the primary testing path. It swaps the entire HTTP layer
+with a fake that records every request and lets you assert against it.
+
+```php
+use Sanchescom\Rest\Rest;
+
+Rest::fake([
+    'posts'   => Rest::response(['id' => 1, 'title' => 'Hello']),
+    'posts/*' => Rest::response(['id' => 2, 'title' => 'Updated']),
+]);
+
+$post = Post::get(1);                  // served from the fake
+Post::post(['title' => 'Hello']);
+
+Rest::assertSentCount(2);
+
+Rest::assertSent(function ($request) {
+    return $request->method() === 'GET' && $request->uri() === 'posts';
+});
+
+Rest::assertNotSent(function ($request) {
+    return $request->method() === 'DELETE';
+});
+
+// Inspect all recorded requests
+$requests = Rest::recorded(); // list<RecordedRequest>
+
+// Restore the real resolver in teardown
+Rest::restore();
+```
+
+`RecordedRequest` exposes `method()`, `uri()`, `query()`, and `data()`.
+
+Patterns in the map use `Str::is()` matching (wildcards with `*`). Responses
+with a 4xx/5xx status code cause the fake to throw the same typed exception as
+the real client would.
+
+> **Important:** `Rest` uses PHPUnit's `Assert` internally. It is a
+> test-context class — do not call `Rest::assertSent*` or `Rest::recorded()`
+> in production code.
+
+**Advanced alternative: `extend('mock')`** for full Guzzle handler control:
 
 ```php
 use GuzzleHttp\Client;
@@ -273,20 +481,16 @@ Model::setClientResolver($resolver);
 Post::get(1); // works — no Laravel container involved
 ```
 
-## Roadmap
+## Capability Matrix
 
-Planned for upcoming releases (not in 1.0 yet):
+See [docs/capabilities.md](docs/capabilities.md) for a full breakdown of what
+is supported, what is not, and how to extend it.
 
-- Query builder (`where()` translated to query strings)
-- Relations between REST models
-- Authentication drivers (bearer, basic, custom)
-- Retry / backoff policies
-- Test fakes (`Rest::fake()`)
-- Model events
+**Planned for 1.2:** response caching.
 
-## Upgrading from 0.x
+## Upgrading
 
-See [UPGRADE.md](UPGRADE.md) — 1.0 contains breaking changes.
+See [UPGRADE.md](UPGRADE.md) for breaking-change notes between every major/minor version.
 
 ## Contributing
 

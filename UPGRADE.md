@@ -1,5 +1,41 @@
 # Upgrade Guide
 
+## 1.0 → 1.1
+
+### `Builder::post()` and `Builder::put()` return `?Model`
+
+Previously both methods always returned a `Model`. They now return `?Model`:
+they return `null` when a `creating` or `updating` event listener cancels the
+operation by returning `false`. If you call these methods via the static
+proxies (`Post::post(...)`, `Post::put(...)`) and do not register any event
+listeners, nothing changes.
+
+If you have type-checked call sites (`Model $result = Post::post([...]);`),
+update them to accept `null`:
+
+```php
+// before
+$post = Post::post(['title' => 'Hello']); // Model
+
+// after
+$post = Post::post(['title' => 'Hello']); // ?Model — null if cancelled
+```
+
+### Custom `ClientResolverInterface` implementations
+
+`ClientResolverInterface` gains one new method:
+
+```php
+public function grammar(?string $name = null): ?string;
+```
+
+Any class that implements this interface (typically a custom resolver wired
+outside Laravel) must add this method. Return `null` to fall back to
+`PlainGrammar`. The two built-in implementations (`ClientManager` and
+`ClientResolver`) already implement it.
+
+---
+
 ## 0.x → 1.0
 
 1.0 is a rewrite. The public model API (`get`, `getMany`, `post`, `put`,
