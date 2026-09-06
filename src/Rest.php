@@ -106,6 +106,8 @@ final class Rest
 
         if (self::$hadPrevious && self::$previous !== null) {
             Model::setClientResolver(self::$previous);
+        } else {
+            Model::unsetClientResolver();
         }
 
         self::$fake = null;

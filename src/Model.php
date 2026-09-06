@@ -34,7 +34,7 @@ use Sanchescom\Rest\Query\PlainGrammar;
  */
 class Model implements Arrayable, ArrayAccess, JsonSerializable
 {
-    protected static ClientResolverInterface $resolver;
+    protected static ?ClientResolverInterface $resolver = null;
 
     protected ?string $client = null;
 
@@ -206,7 +206,12 @@ class Model implements Arrayable, ArrayAccess, JsonSerializable
 
     public static function getClientResolver(): ?ClientResolverInterface
     {
-        return isset(static::$resolver) ? static::$resolver : null;
+        return static::$resolver;
+    }
+
+    public static function unsetClientResolver(): void
+    {
+        static::$resolver = null;
     }
 
     public function getClient(): ClientInterface
@@ -227,7 +232,7 @@ class Model implements Arrayable, ArrayAccess, JsonSerializable
     public function newBuilder(): Builder
     {
         $grammarClass = $this->grammar
-            ?? (isset(static::$resolver) ? static::$resolver->grammar($this->client) : null)
+            ?? (static::$resolver !== null ? static::$resolver->grammar($this->client) : null)
             ?? PlainGrammar::class;
 
         return new Builder($this, new $grammarClass);

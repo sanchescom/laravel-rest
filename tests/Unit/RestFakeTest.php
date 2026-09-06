@@ -52,7 +52,11 @@ it('maps error statuses to typed exceptions', function () {
 
 it('restores the previous resolver', function () {
     $before = Model::getClientResolver();
+
     Rest::fake(['x' => Rest::response([])]);
+
+    expect(Model::getClientResolver())->not->toBe($before);
+
     Rest::restore();
 
     expect(Model::getClientResolver())->toBe($before);
