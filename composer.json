@@ -18,7 +18,8 @@
         "mockery/mockery": "^1.6",
         "orchestra/testbench": "^9.9|^10.0",
         "pestphp/pest": "^3.0",
-        "phpstan/phpstan": "^2.0"
+        "phpstan/phpstan": "^2.0",
+        "psr/simple-cache": "^3.0"
     },
     "autoload": {
         "psr-4": {"Sanchescom\\Rest\\": "src/"}
@@ -32,6 +33,9 @@
         "lint": "./vendor/bin/pint --test",
         "fix": "./vendor/bin/pint",
         "analyse": "./vendor/bin/phpstan analyse"
+    },
+    "suggest": {
+        "psr/simple-cache": "Required when response caching is enabled (^3.0)."
     },
     "extra": {
         "laravel": {"providers": ["Sanchescom\\Rest\\RestServiceProvider"]}
