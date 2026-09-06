@@ -6,6 +6,7 @@ namespace Sanchescom\Rest;
 
 use Illuminate\Support\Arr;
 use Psr\Http\Message\ResponseInterface;
+use Sanchescom\Rest\Cache\CachingClient;
 use Sanchescom\Rest\Contracts\ClientInterface;
 use Sanchescom\Rest\Exceptions\RestException;
 use Sanchescom\Rest\Query\Grammar;
@@ -18,6 +19,10 @@ final class Builder
     private QueryState $state;
 
     private ?string $endpointOverride = null;
+
+    private ?int $cacheTtlOverride = null;
+
+    private bool $cacheDisabled = false;
 
     public function __construct(
         private readonly Model $model,
@@ -79,6 +84,21 @@ final class Builder
     public function from(string $endpoint): self
     {
         $this->endpointOverride = $endpoint;
+
+        return $this;
+    }
+
+    public function withCache(?int $ttl = null): self
+    {
+        $this->cacheDisabled = false;
+        $this->cacheTtlOverride = $ttl ?? $this->model->getCacheTtl() ?? Model::getDefaultCacheTtl();
+
+        return $this;
+    }
+
+    public function withoutCache(): self
+    {
+        $this->cacheDisabled = true;
 
         return $this;
     }
@@ -236,6 +256,22 @@ final class Builder
 
     private function client(): ClientInterface
     {
-        return $this->model->getClient();
+        $client = $this->model->getClient();
+
+        $ttl = $this->cacheDisabled ? null : ($this->cacheTtlOverride ?? $this->model->getCacheTtl());
+
+        if ($ttl === null) {
+            return $client;
+        }
+
+        $store = Model::getCacheStore();
+
+        if ($store === null) {
+            throw new RestException(
+                'Caching requested but no cache store configured. Call Model::setCacheStore() or set rest.cache.'
+            );
+        }
+
+        return new CachingClient($client, $store, $this->model::class, $this->model->getClientName(), $ttl);
     }
 }

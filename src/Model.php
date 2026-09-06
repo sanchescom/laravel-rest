@@ -8,6 +8,8 @@ use ArrayAccess;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Support\Str;
 use JsonSerializable;
+use Psr\SimpleCache\CacheInterface;
+use Sanchescom\Rest\Cache\CacheKeys;
 use Sanchescom\Rest\Contracts\ClientInterface;
 use Sanchescom\Rest\Contracts\ClientResolverInterface;
 use Sanchescom\Rest\Query\PlainGrammar;
@@ -29,6 +31,8 @@ use Sanchescom\Rest\Query\PlainGrammar;
  * @method static Builder withQuery(array<string, mixed> $params)
  * @method static Model|null first()
  * @method static int count()
+ * @method static Builder withCache(?int $ttl = null)
+ * @method static Builder withoutCache()
  *
  * @phpstan-consistent-constructor
  */
@@ -41,7 +45,13 @@ class Model implements Arrayable, ArrayAccess, JsonSerializable
 
     protected static ?object $eventDispatcher = null;
 
+    protected static ?CacheInterface $cacheStore = null;
+
+    protected static int $defaultCacheTtl = 300;
+
     protected ?string $client = null;
+
+    protected ?int $cacheTtl = null;
 
     protected ?string $endpoint = null;
 
@@ -265,6 +275,45 @@ class Model implements Arrayable, ArrayAccess, JsonSerializable
     public static function unsetClientResolver(): void
     {
         static::$resolver = null;
+    }
+
+    public static function setCacheStore(?CacheInterface $store, int $defaultTtl = 300): void
+    {
+        static::$cacheStore = $store;
+        static::$defaultCacheTtl = $defaultTtl;
+    }
+
+    public static function getCacheStore(): ?CacheInterface
+    {
+        return static::$cacheStore;
+    }
+
+    public static function getDefaultCacheTtl(): int
+    {
+        return static::$defaultCacheTtl;
+    }
+
+    public function getCacheTtl(): ?int
+    {
+        return $this->cacheTtl;
+    }
+
+    public function getClientName(): ?string
+    {
+        return $this->client;
+    }
+
+    public static function flushCache(): void
+    {
+        $store = static::getCacheStore();
+
+        if ($store === null) {
+            return;
+        }
+
+        $key = CacheKeys::version(static::class);
+
+        $store->set($key, (int) $store->get($key, 0) + 1);
     }
 
     public function getClient(): ClientInterface
