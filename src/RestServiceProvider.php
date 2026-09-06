@@ -33,5 +33,14 @@ class RestServiceProvider extends ServiceProvider
         if ($this->app->bound('events')) {
             Model::setEventDispatcher($this->app->make('events'));
         }
+
+        $cache = $this->app['config']->get('rest.cache');
+
+        if (is_array($cache) && $this->app->bound('cache')) {
+            Model::setCacheStore(
+                $this->app->make('cache')->store($cache['store'] ?? null),
+                (int) ($cache['ttl'] ?? 300),
+            );
+        }
     }
 }

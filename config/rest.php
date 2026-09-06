@@ -26,6 +26,23 @@ return [
     |
     */
 
+    /*
+    |--------------------------------------------------------------------------
+    | Response Cache
+    |--------------------------------------------------------------------------
+    |
+    | GET responses can be cached per model (Model::$cacheTtl) or per chain
+    | (withCache()/withoutCache()). 'store' selects the Laravel cache store
+    | (null = default store); 'ttl' is the default TTL in seconds used by
+    | withCache() without arguments. Set 'cache' => false to skip wiring.
+    |
+    */
+
+    'cache' => [
+        'store' => null,
+        'ttl' => 300,
+    ],
+
     'clients' => [
         'localhost' => [
             'provider' => 'guzzle',
