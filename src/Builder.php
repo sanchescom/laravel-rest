@@ -24,6 +24,9 @@ final class Builder
 
     private bool $cacheDisabled = false;
 
+    /** @var array<string, string> */
+    private array $headers = [];
+
     public function __construct(
         private readonly Model $model,
         private readonly Grammar $grammar = new PlainGrammar,
@@ -99,6 +102,16 @@ final class Builder
     public function withoutCache(): self
     {
         $this->cacheDisabled = true;
+
+        return $this;
+    }
+
+    /**
+     * @param  array<string, string>  $headers
+     */
+    public function withHeaders(array $headers): self
+    {
+        $this->headers = array_merge($this->headers, $headers);
 
         return $this;
     }
@@ -259,7 +272,9 @@ final class Builder
 
     private function client(): ClientInterface
     {
-        $client = $this->model->getClient();
+        $headers = array_merge($this->model->getHeaders(), $this->headers);
+
+        $client = $this->model->getClient($headers === [] ? [] : ['headers' => $headers]);
 
         $ttl = $this->cacheDisabled ? null : ($this->cacheTtlOverride ?? $this->model->getCacheTtl());
 
@@ -275,6 +290,13 @@ final class Builder
             );
         }
 
-        return new CachingClient($client, $store, $this->model::class, $this->model->getClientName(), $ttl);
+        return new CachingClient(
+            $client,
+            $store,
+            $this->model::class,
+            $this->model->getClientName(),
+            $ttl,
+            $headers === [] ? null : md5(serialize($headers)),
+        );
     }
 }

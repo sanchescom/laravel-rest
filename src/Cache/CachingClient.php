@@ -18,6 +18,7 @@ final class CachingClient implements ClientInterface
         private readonly string $modelClass,
         private readonly ?string $clientName,
         private readonly int $ttl,
+        private readonly ?string $keyExtra = null,
     ) {}
 
     /**
@@ -100,7 +101,7 @@ final class CachingClient implements ClientInterface
     {
         $version = (int) $this->cache->get(CacheKeys::version($this->modelClass), 0);
 
-        return CacheKeys::entry($this->clientName, $this->modelClass, $version, $uri, $query);
+        return CacheKeys::entry($this->clientName, $this->modelClass, $version, $uri, $query, $this->keyExtra);
     }
 
     private function remember(string $key, ResponseInterface $response): ResponseInterface

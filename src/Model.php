@@ -34,6 +34,7 @@ use Sanchescom\Rest\Query\PlainGrammar;
  * @method static int count()
  * @method static Builder withCache(?int $ttl = null)
  * @method static Builder withoutCache()
+ * @method static Builder withHeaders(array<string, string> $headers)
  *
  * @phpstan-consistent-constructor
  */
@@ -63,6 +64,9 @@ class Model implements Arrayable, ArrayAccess, JsonSerializable
 
     /** @var array<string, mixed> */
     protected array $options = [];
+
+    /** @var array<string, string> */
+    protected array $headers = [];
 
     /** @var array<string, mixed> */
     protected array $attributes = [];
@@ -317,9 +321,23 @@ class Model implements Arrayable, ArrayAccess, JsonSerializable
         $store->set($key, (int) $store->get($key, 0) + 1);
     }
 
-    public function getClient(): ClientInterface
+    /**
+     * @return array<string, string>
+     */
+    public function getHeaders(): array
     {
-        return static::$resolver->client($this->client, $this->options);
+        return $this->headers;
+    }
+
+    /**
+     * @param  array<string, mixed>  $extraOptions
+     */
+    public function getClient(array $extraOptions = []): ClientInterface
+    {
+        return static::$resolver->client(
+            $this->client,
+            $extraOptions === [] ? $this->options : array_replace_recursive($this->options, $extraOptions),
+        );
     }
 
     public function getEndpoint(): string

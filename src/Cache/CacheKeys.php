@@ -9,7 +9,7 @@ final class CacheKeys
     /**
      * @param  array<string, mixed>  $query
      */
-    public static function entry(?string $client, string $modelClass, int $version, string $uri, array $query): string
+    public static function entry(?string $client, string $modelClass, int $version, string $uri, array $query, ?string $extra = null): string
     {
         return 'rest:cache:'.md5(implode('|', [
             $client ?? '',
@@ -17,6 +17,7 @@ final class CacheKeys
             (string) $version,
             $uri,
             serialize($query),
+            $extra ?? '',
         ]));
     }
 
