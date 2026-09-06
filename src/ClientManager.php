@@ -83,4 +83,13 @@ class ClientManager implements ClientResolverInterface
     {
         $this->extensions[$name] = $resolver;
     }
+
+    public function grammar(?string $name = null): ?string
+    {
+        $name ??= $this->getDefaultClient();
+
+        $grammar = $this->config->get("rest.clients.{$name}.grammar");
+
+        return is_string($grammar) ? $grammar : null;
+    }
 }

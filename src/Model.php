@@ -10,6 +10,7 @@ use Illuminate\Support\Str;
 use JsonSerializable;
 use Sanchescom\Rest\Contracts\ClientInterface;
 use Sanchescom\Rest\Contracts\ClientResolverInterface;
+use Sanchescom\Rest\Query\PlainGrammar;
 
 /**
  * @implements ArrayAccess<string, mixed>
@@ -20,6 +21,14 @@ use Sanchescom\Rest\Contracts\ClientResolverInterface;
  * @method static Model post(array<string, mixed> $data = [])
  * @method static Model put(string|int|null $id = null, array<string, mixed> $data = [])
  * @method static bool delete(string|int|null $id = null)
+ * @method static Builder where(string $field, mixed $operator = null, mixed $value = null)
+ * @method static Builder orderBy(string $field, string $direction = 'asc')
+ * @method static Builder limit(int $limit)
+ * @method static Builder offset(int $offset)
+ * @method static Builder page(int $page)
+ * @method static Builder withQuery(array<string, mixed> $params)
+ * @method static Model|null first()
+ * @method static int count()
  *
  * @phpstan-consistent-constructor
  */
@@ -32,6 +41,9 @@ class Model implements Arrayable, ArrayAccess, JsonSerializable
     protected ?string $endpoint = null;
 
     protected ?string $dataKey = null;
+
+    /** @var class-string|null */
+    protected ?string $grammar = null;
 
     /** @var array<string, mixed> */
     protected array $options = [];
@@ -209,7 +221,11 @@ class Model implements Arrayable, ArrayAccess, JsonSerializable
 
     public function newBuilder(): Builder
     {
-        return new Builder($this);
+        $grammarClass = $this->grammar
+            ?? (isset(static::$resolver) ? static::$resolver->grammar($this->client) : null)
+            ?? PlainGrammar::class;
+
+        return new Builder($this, new $grammarClass);
     }
 
     /**

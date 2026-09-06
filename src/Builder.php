@@ -8,18 +8,101 @@ use Illuminate\Support\Arr;
 use Psr\Http\Message\ResponseInterface;
 use Sanchescom\Rest\Contracts\ClientInterface;
 use Sanchescom\Rest\Exceptions\RestException;
+use Sanchescom\Rest\Query\Grammar;
+use Sanchescom\Rest\Query\PlainGrammar;
+use Sanchescom\Rest\Query\QueryState;
 use Sanchescom\Rest\Support\Json;
 
 final class Builder
 {
-    public function __construct(private readonly Model $model) {}
+    private QueryState $state;
+
+    private ?string $endpointOverride = null;
+
+    public function __construct(
+        private readonly Model $model,
+        private readonly Grammar $grammar = new PlainGrammar,
+    ) {
+        $this->state = new QueryState;
+    }
+
+    public function where(string $field, mixed $operator = null, mixed $value = null): self
+    {
+        if (func_num_args() === 2) {
+            $value = $operator;
+            $operator = '=';
+        }
+
+        $this->state->wheres[] = ['field' => $field, 'operator' => (string) $operator, 'value' => $value];
+
+        return $this;
+    }
+
+    public function orderBy(string $field, string $direction = 'asc'): self
+    {
+        $this->state->orders[] = ['field' => $field, 'direction' => $direction];
+
+        return $this;
+    }
+
+    public function limit(int $limit): self
+    {
+        $this->state->limit = $limit;
+
+        return $this;
+    }
+
+    public function offset(int $offset): self
+    {
+        $this->state->offset = $offset;
+
+        return $this;
+    }
+
+    public function page(int $page): self
+    {
+        $this->state->page = $page;
+
+        return $this;
+    }
+
+    /**
+     * @param  array<string, mixed>  $params
+     */
+    public function withQuery(array $params): self
+    {
+        $this->state->extra = array_merge($this->state->extra, $params);
+
+        return $this;
+    }
+
+    public function from(string $endpoint): self
+    {
+        $this->endpointOverride = $endpoint;
+
+        return $this;
+    }
+
+    public function first(): ?Model
+    {
+        $result = $this->get();
+
+        return $result instanceof Collection ? $result->first() : $result;
+    }
+
+    public function count(): int
+    {
+        $result = $this->get();
+
+        return $result instanceof Collection ? $result->count() : 1;
+    }
 
     /**
      * @return Model|Collection<int, Model>
      */
     public function get(string|int|null $id = null): Model|Collection
     {
-        $payload = $this->decode($this->client()->get($this->uri($id), []));
+        $payload = $this->decode($this->client()->get($this->uri($id), $this->grammar->compile($this->state)));
 
         if ($id !== null) {
             return $this->model->newInstance($this->extract($payload));
@@ -114,19 +197,19 @@ final class Builder
     }
 
     /**
-     * @param  array<int, array<string, mixed>>  $items
+     * @param  array<mixed>  $items
      * @return Collection<int, Model>
      */
     private function hydrate(array $items): Collection
     {
         return $this->model->newCollection(
-            array_map(fn (array $item) => $this->model->newInstance($item), array_values($items)),
+            array_map(fn (mixed $item) => $this->model->newInstance(is_array($item) ? $item : []), array_values($items)),
         );
     }
 
     private function uri(string|int|null $id = null): string
     {
-        $endpoint = $this->model->getEndpoint();
+        $endpoint = $this->endpointOverride ?? $this->model->getEndpoint();
 
         return $id === null ? $endpoint : "{$endpoint}/{$id}";
     }

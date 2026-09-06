@@ -12,6 +12,9 @@ class ClientResolver implements ClientResolverInterface
 {
     protected ?string $default = null;
 
+    /** @var array<string, string> */
+    protected array $grammars = [];
+
     /**
      * @param  array<string, ClientInterface>  $clients
      */
@@ -44,5 +47,15 @@ class ClientResolver implements ClientResolverInterface
     public function setDefaultClient(string $name): void
     {
         $this->default = $name;
+    }
+
+    public function setGrammar(string $client, string $grammarClass): void
+    {
+        $this->grammars[$client] = $grammarClass;
+    }
+
+    public function grammar(?string $name = null): ?string
+    {
+        return $this->grammars[$name ?? $this->default ?? ''] ?? null;
     }
 }
