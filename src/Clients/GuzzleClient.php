@@ -20,13 +20,19 @@ use Sanchescom\Rest\Exceptions\RequestException;
 
 final class GuzzleClient implements ClientInterface
 {
-    public function __construct(private readonly Client $client) {}
+    public function __construct(private readonly Client $client, private readonly ?string $errorsKey = null, private readonly string $updateMethod = 'put') {}
 
     /**
-     * @param  array{base_uri?: string, options?: array<string, mixed>, auth?: array<string, mixed>, retry?: array<string, mixed>}  $config
+     * @param  array{base_uri?: string, options?: array<string, mixed>, auth?: array<string, mixed>, retry?: array<string, mixed>, update_method?: string, errors_key?: string}  $config
      */
     public static function fromConfig(array $config): self
     {
+        $updateMethod = $config['update_method'] ?? 'put';
+
+        if (! in_array($updateMethod, ['put', 'patch'], true)) {
+            throw new InvalidArgumentException("Unsupported update_method [{$updateMethod}].");
+        }
+
         $options = $config['options'] ?? [];
 
         $stack = $options['handler'] ?? HandlerStack::create();
@@ -48,7 +54,7 @@ final class GuzzleClient implements ClientInterface
             'http_errors' => false,
         ]);
 
-        return new self(new Client($options));
+        return new self(new Client($options), $config['errors_key'] ?? null, $updateMethod);
     }
 
     /**
@@ -170,7 +176,7 @@ final class GuzzleClient implements ClientInterface
      */
     public function put(string $uri, array $data = []): ResponseInterface
     {
-        return $this->ensureSuccessful($uri, $this->client->put($uri, ['json' => $data]));
+        return $this->ensureSuccessful($uri, $this->client->request(strtoupper($this->updateMethod), $uri, ['json' => $data]));
     }
 
     public function delete(string $uri): ResponseInterface
@@ -185,7 +191,7 @@ final class GuzzleClient implements ClientInterface
         if ($status >= 400) {
             $body = json_decode((string) $response->getBody(), true);
 
-            throw RequestException::fromStatus($uri, $status, is_array($body) ? $body : []);
+            throw RequestException::fromStatus($uri, $status, is_array($body) ? $body : [], $this->errorsKey);
         }
 
         return $response;

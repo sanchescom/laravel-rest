@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Sanchescom\Rest\Exceptions;
 
+use Illuminate\Support\Arr;
+
 class ValidationException extends RequestException
 {
     /**
@@ -11,6 +13,6 @@ class ValidationException extends RequestException
      */
     public function errors(): array
     {
-        return (array) ($this->body['errors'] ?? []);
+        return (array) Arr::get($this->body, $this->errorsKey ?? 'errors', []);
     }
 }
