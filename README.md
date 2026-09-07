@@ -266,6 +266,395 @@ class Article extends Model
 Grammars implement `Sanchescom\Rest\Query\Grammar` — use a custom class for
 any other query convention. See [docs/capabilities.md](docs/capabilities.md).
 
+## Adapting to API Conventions
+
+Every REST API names its parameters differently. Some call it `page_size`,
+others call it `page[size]`. Some prefix descending sorts with `-`, others
+append `:desc`. The `'query'` key in any client config covers all of these
+without touching the calling code. For truly exotic conventions, implement
+`Sanchescom\Rest\Query\Grammar` (or `AuthInterface` / `ClientInterface`) — but
+in the common case a config array is all you need.
+
+### 1. Renaming Parameters
+
+The `names` map translates the library's canonical parameter names (`limit`,
+`offset`, `page`, `sort`) to whatever the API expects. Dot notation in the
+value produces a nested array that Guzzle serialises as `param[sub]`:
+
+```php
+// config/rest.php
+'clients' => [
+    'catalog' => [
+        'provider' => 'guzzle',
+        'base_uri'  => 'https://api.example.com/v2/',
+        'query' => [
+            'names' => [
+                'limit'  => 'page.size',    // page[size]=...
+                'page'   => 'page.number',  // page[number]=...
+                'offset' => 'page.offset',  // page[offset]=...
+            ],
+        ],
+    ],
+],
+```
+
+```php
+Article::page(2)->limit(25)->get();
+// GET articles?page[size]=25&page[number]=2
+```
+
+### 2. Sort Styles
+
+Four styles are available. Pick the one that matches your API:
+
+**`dash` (default)** — prefix descending fields with `-`, comma-separate:
+
+```php
+'query' => ['sort' => 'dash'],
+```
+
+```php
+Product::orderBy('price', 'desc')->orderBy('name')->get();
+// GET products?sort=-price,name
+```
+
+**`suffix`** — append a separator (default `:`) followed by the direction:
+
+```php
+'query' => ['sort' => 'suffix'],              // uses ':' separator
+'query' => ['sort' => 'suffix', 'sort_suffix' => '|'],  // custom separator
+```
+
+```php
+Product::orderBy('price', 'desc')->orderBy('name')->get();
+// GET products?sort=price:desc,name:asc
+// (or price|desc,name|asc with the custom separator)
+```
+
+**`separate`** — two distinct parameters for field and direction (only the
+**first** `orderBy` is sent; additional calls are ignored):
+
+```php
+'query' => [
+    'sort'       => 'separate',
+    'sort_names' => ['field' => 'sort_by', 'direction' => 'sort_dir'],
+],
+```
+
+```php
+Product::orderBy('price', 'desc')->get();
+// GET products?sort_by=price&sort_dir=desc
+```
+
+**`array`** — an associative array keyed by field name:
+
+```php
+'query' => ['sort' => 'array'],
+```
+
+```php
+Product::orderBy('price', 'desc')->orderBy('name')->get();
+// GET products?sort[price]=desc&sort[name]=asc
+```
+
+### 3. Filter Styles
+
+Three filter styles cover the most common conventions:
+
+**`plain` (default)** — bare equality, operator in brackets for inequalities:
+
+```php
+'query' => ['filters' => 'plain'],
+```
+
+```php
+Order::where('status', 'shipped')->where('total', '>', 100)->get();
+// GET orders?status=shipped&total[>]=100
+```
+
+**`brackets`** — JSON:API-style `filter[field]`:
+
+```php
+'query' => ['filters' => 'brackets'],
+```
+
+```php
+Order::where('status', 'shipped')->where('total', '>', 100)->get();
+// GET orders?filter[status]=shipped&filter[total][>]=100
+```
+
+**`django`** — Django REST Framework style with double-underscore lookups:
+
+```php
+'query' => ['filters' => 'django'],
+```
+
+```php
+Order::where('status', 'shipped')->where('total', 'gte', 100)->get();
+// GET orders?status=shipped&total__gte=100
+```
+
+### 4. Presets
+
+Two presets are built in. Pass a string to activate one:
+
+```php
+// JSON:API preset — brackets filters, dash sort, page[size]/page[number]/page[offset]
+'query' => 'jsonapi',
+
+// Django DRF preset — django filters, dash sort, ordering/page_size
+'query' => 'django',
+```
+
+```php
+// Preset with overrides — start from jsonapi and change just the sort style
+'query' => [
+    'preset' => 'jsonapi',
+    'sort'   => 'suffix',
+],
+```
+
+```php
+// jsonapi preset in action
+Article::where('published', true)->orderBy('created_at', 'desc')->page(2)->limit(15)->get();
+// GET articles?filter[published]=true&sort=-created_at&page[size]=15&page[number]=2
+
+// django preset in action
+Article::where('published', true)->orderBy('created_at', 'desc')->limit(15)->get();
+// GET articles?published=true&ordering=-created_at&page_size=15
+```
+
+### 5. Field Casing
+
+The `casing` option normalises every field name that appears in `where()` and
+`orderBy()` calls before it hits the wire. Useful when your PHP code uses
+camelCase but the API expects snake_case:
+
+```php
+'query' => ['casing' => 'snake'],   // camel → snake
+'query' => ['casing' => 'camel'],   // snake → camel
+```
+
+```php
+// 'casing' => 'snake'
+Report::where('reportDate', '2024-01-01')->orderBy('totalRevenue', 'desc')->get();
+// GET reports?report_date=2024-01-01&sort=-total_revenue
+```
+
+### 6. Dynamic Headers
+
+**Model-level headers** — always sent for every request from this model:
+
+```php
+class Tenant extends Model
+{
+    protected ?string $client   = 'platform';
+    protected ?string $endpoint = 'tenants';
+
+    /** @var array<string, string> */
+    protected array $headers = [
+        'X-Tenant-ID' => 'acme',
+    ];
+}
+
+// GET tenants   (headers: X-Tenant-ID: acme)
+Tenant::get();
+```
+
+**Per-chain `withHeaders()`** — merges over the model-level headers; chain
+value wins on key conflicts:
+
+```php
+Tenant::withHeaders([
+    'X-Tenant-ID'      => 'betacorp',   // overrides the model default
+    'Accept-Language'  => 'fr-FR',
+])->where('active', true)->get();
+// GET tenants?active=true   (headers: X-Tenant-ID: betacorp, Accept-Language: fr-FR)
+```
+
+> **Note:** under `Rest::fake()` the inline resolver ignores the `options`
+> argument passed to `client()`, so headers are **not** forwarded to the fake.
+> The fake sees bare requests with no custom headers. Similarly, the standalone
+> `ClientResolver` ignores the `options` argument — wire headers directly
+> into the `ClientInterface` instance you register instead.
+
+### 7. Configuring the Errors Key
+
+By default, `ValidationException::errors()` looks for the `'errors'` key in
+the response body. Set `errors_key` (dot notation supported) to point at a
+different location:
+
+```php
+'clients' => [
+    'myapi' => [
+        'provider'   => 'guzzle',
+        'base_uri'   => 'https://api.example.com/',
+        'errors_key' => 'meta.validation_errors',
+    ],
+],
+```
+
+```php
+// Response body from the API:
+// {
+//   "message": "Unprocessable",
+//   "meta": {
+//     "validation_errors": {"email": ["already taken"]}
+//   }
+// }
+
+try {
+    User::post(['email' => 'taken@example.com']);
+} catch (\Sanchescom\Rest\Exceptions\ValidationException $e) {
+    $e->errors(); // ['email' => ['already taken']]
+}
+```
+
+### 8. PATCH Updates
+
+By default `put()` sends a `PUT` request. Switch to `PATCH` per client:
+
+```php
+'clients' => [
+    'myapi' => [
+        'provider'      => 'guzzle',
+        'base_uri'      => 'https://api.example.com/',
+        'update_method' => 'patch',
+    ],
+],
+```
+
+```php
+User::put(42, ['email' => 'new@example.com']);
+// PATCH users/42   {"email":"new@example.com"}
+```
+
+### 9. Request Envelopes
+
+Some APIs require the POST/PUT body to be nested under a key:
+
+```php
+class Invoice extends Model
+{
+    protected ?string $endpoint       = 'invoices';
+    protected ?string $requestDataKey = 'data';  // write envelope
+    protected ?string $dataKey        = 'data';  // read unwrap key
+}
+```
+
+```php
+Invoice::post(['number' => 'INV-001', 'total' => 500]);
+// POST invoices
+// Body: {"data":{"number":"INV-001","total":500}}
+
+Invoice::get(1);
+// GET invoices/1
+// Response: {"data":{"id":1,"number":"INV-001","total":500}}
+// → Invoice with attributes {id:1, number:"INV-001", total:500}
+```
+
+> `$requestDataKey` wraps **write** bodies (POST/PUT/PATCH).
+> `$dataKey` unwraps **read** responses (GET). They are independent — you can
+> set one without the other.
+
+### 10. Standalone Resolver — Setting Query Config
+
+Outside Laravel you can configure `ConfigurableGrammar` directly on
+`ClientResolver` instead of relying on the config file:
+
+```php
+use Sanchescom\Rest\ClientResolver;
+use Sanchescom\Rest\Clients\GuzzleClient;
+use Sanchescom\Rest\Model;
+
+$resolver = new ClientResolver;
+$resolver->addClient('catalog', GuzzleClient::fromConfig([
+    'base_uri' => 'https://api.example.com/',
+]));
+$resolver->setDefaultClient('catalog');
+$resolver->setQueryConfig('catalog', 'jsonapi');   // preset string
+
+Model::setClientResolver($resolver);
+
+// Or with a full config array:
+$resolver->setQueryConfig('catalog', [
+    'preset' => 'jsonapi',
+    'sort'   => 'suffix',
+]);
+```
+
+### 11. Putting It All Together
+
+A realistic client config combining several conventions, plus a model that uses
+a write envelope:
+
+```php
+// config/rest.php
+'clients' => [
+    'commerce' => [
+        'provider'      => 'guzzle',
+        'base_uri'      => 'https://api.commerce.example/v3/',
+        'update_method' => 'patch',
+        'errors_key'    => 'errors.fields',
+        'query' => [
+            'preset'  => 'jsonapi',  // brackets filters, dash sort, page[size]/page[number]
+            'sort'    => 'suffix',   // override sort to suffix style
+            'casing'  => 'snake',    // normalise camelCase PHP fields to snake_case on the wire
+        ],
+        'auth' => [
+            'driver' => 'bearer',
+            'token'  => env('COMMERCE_TOKEN'),
+        ],
+    ],
+],
+```
+
+```php
+class Order extends Model
+{
+    protected ?string $client         = 'commerce';
+    protected ?string $endpoint       = 'orders';
+    protected ?string $dataKey        = 'data';
+    protected ?string $requestDataKey = 'data';
+
+    /** @var array<string, string> */
+    protected array $headers = ['X-Store-ID' => 'eu-west-1'];
+}
+```
+
+```php
+// List — filters, sort, pagination, casing all applied automatically
+Order::where('status', 'pending')
+     ->where('totalAmount', 'gte', 50)
+     ->orderBy('createdAt', 'desc')
+     ->page(2)
+     ->limit(20)
+     ->get();
+// GET orders?filter[status]=pending&filter[total_amount][gte]=50
+//            &sort=created_at:desc&page[size]=20&page[number]=2
+// Headers: Authorization: Bearer <token>, X-Store-ID: eu-west-1
+
+// Per-chain header override for a specific locale
+Order::withHeaders(['Accept-Language' => 'de-DE'])
+     ->where('status', 'pending')
+     ->get();
+// GET orders?filter[status]=pending
+// Headers: Authorization: Bearer <token>, X-Store-ID: eu-west-1, Accept-Language: de-DE
+
+// Create — body wrapped in 'data'
+Order::post(['customerEmail' => 'alice@example.com', 'totalAmount' => 99.90]);
+// PATCH orders   (update_method: patch)
+// Body: {"data":{"customerEmail":"alice@example.com","totalAmount":99.9}}
+
+// Validation error — errors extracted from nested key
+try {
+    Order::post(['customerEmail' => 'bad']);
+} catch (\Sanchescom\Rest\Exceptions\ValidationException $e) {
+    // Response: {"errors":{"fields":{"customer_email":["invalid email"]}}}
+    $e->errors(); // ['customer_email' => ['invalid email']]
+}
+```
+
 ## Caching
 
 laravel-rest can cache GET responses so that repeat reads within a TTL window

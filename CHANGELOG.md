@@ -4,6 +4,49 @@ All notable changes to this project will be documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/) and this
 project adheres to [Semantic Versioning](https://semver.org/).
 
+## 1.3.0
+
+### Added
+
+- **`ConfigurableGrammar`** — a grammar driven entirely by a `'query'` config
+  array (or preset string) with no custom class required. Supports four sort
+  styles (`dash`, `suffix`, `separate`, `array`), three filter styles
+  (`plain`, `brackets`, `django`), parameter renaming with dot-notation nesting,
+  and field-name casing (`snake`/`camel`).
+- **Presets** — `'query' => 'jsonapi'` (brackets filters, dash sort,
+  `page[size]`/`page[number]`/`page[offset]`) and `'query' => 'django'`
+  (django filters, dash sort, `ordering`/`page_size`). Presets can be mixed
+  with overrides via `'preset' => 'jsonapi'` inside an array config.
+- **`queryConfig()` resolution** — `ClientManager` reads `rest.clients.<name>.query`
+  from the config file; `ClientResolver` exposes `setQueryConfig()`. Resolution
+  order: model `$grammar` → client `'grammar'` → client `'query'` → `PlainGrammar`.
+- **Dynamic headers** — `withHeaders(array $headers)` chain method merges
+  request-time headers over the model-level `protected array $headers` property.
+  The merge is applied per chain call; the model property is never mutated.
+  Cache keys encode the merged header set so each header combination gets its
+  own cache entry.
+- **`errors_key`** — client config key (dot notation, e.g. `'meta.errors'`)
+  that tells `ValidationException::errors()` where to find field errors in the
+  response body. Default remains `'errors'`.
+- **`update_method`** — client config key (`'put'` | `'patch'`) that controls
+  the HTTP verb used by `Builder::put()`. Default remains `'put'`.
+- **`requestDataKey`** — model property (`protected ?string $requestDataKey`)
+  that wraps POST/PUT/PATCH bodies in a named key (e.g. `'data'`). Independent
+  of the read-side `$dataKey`.
+
+### Changed (breaking for custom `ClientResolverInterface` implementations)
+
+`ClientResolverInterface` gains one new method:
+
+```php
+public function queryConfig(?string $name = null): array|string|null;
+```
+
+Any class that implements this interface must add this method. Return `null`
+to fall back to `PlainGrammar` (same semantics as returning `null` from
+`grammar()`). The two built-in implementations (`ClientManager` and
+`ClientResolver`) already implement it.
+
 ## 1.2.0
 
 ### Added

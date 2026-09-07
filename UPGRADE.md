@@ -1,5 +1,33 @@
 # Upgrade Guide
 
+## 1.2 → 1.3
+
+1.3 is **additive except for one interface method**. Existing models and
+clients that do not use `ConfigurableGrammar`, `withHeaders()`, `errors_key`,
+`update_method`, or `requestDataKey` are unaffected.
+
+### Custom `ClientResolverInterface` implementations
+
+`ClientResolverInterface` gains one new method:
+
+```php
+public function queryConfig(?string $name = null): array|string|null;
+```
+
+Add it to any class that implements the interface. Return `null` to preserve
+the existing behaviour (fall back to `PlainGrammar` or the class-level
+`$grammar` property):
+
+```php
+public function queryConfig(?string $name = null): array|string|null
+{
+    return null; // no ConfigurableGrammar — keep existing grammar resolution
+}
+```
+
+The two built-in implementations (`ClientManager` and `ClientResolver`) already
+implement it.
+
 ## 1.1 → 1.2
 
 1.2 is fully additive — no breaking changes. To enable caching, add `$cacheTtl`

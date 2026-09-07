@@ -1,20 +1,21 @@
 # Capability Matrix
 
-What laravel-rest supports as of 1.2.0 — and what it deliberately does not.
+What laravel-rest supports as of 1.3.0 — and what it deliberately does not.
 
 | Area | Supported | Not supported (workaround) |
 | --- | --- | --- |
 | Request bodies | JSON | form-encoded, multipart, XML (custom `ClientInterface`) |
-| Query filters | plain `?field=value`, JSON:API `filter[...]`, custom `Grammar` | GraphQL, OData `$filter` (custom `Grammar`) |
-| Sorting | `sort=-date,name` (plain and JSON:API) | per-API sort keys (use `withQuery()`) |
-| Pagination | query params: `limit/offset/page`, `page[size]/page[number]` | Link-header, cursor tokens (use `withQuery()` manually) |
+| Query filters | plain `?field=value`, JSON:API `filter[...]`, django `field__op=value`, `ConfigurableGrammar` (all three via `'query'` config), custom `Grammar` | GraphQL, OData `$filter` (custom `Grammar`) |
+| Sorting | 4 styles: `dash` (`-field`), `suffix` (`field:dir`), `separate` (two params), `array` (`sort[field]=dir`); renames via `names.sort`; casing via `casing` key; all configurable per client | — |
+| Pagination | query params: `limit/offset/page`; renamable/nestable via `names` (e.g. `'limit' => 'page.size'` → `page[size]`); JSON:API `page[size]/page[number]/page[offset]` via preset | Link-header, cursor tokens (use `withQuery()` manually) |
 | Auth | bearer, basic, arbitrary headers, custom `AuthInterface` | OAuth2 token acquisition/refresh (attach ready tokens only) |
 | Retry | status-based with exponential backoff and `Retry-After` (integer seconds) | HTTP-date form of `Retry-After` (workaround: exponential backoff), circuit breakers, jitter |
-| Errors | 404/422/5xx/4xx typed exceptions, JSON bodies | non-JSON error bodies are preserved as empty `body` |
-| Envelopes | any `dataKey` (dot notation via `Arr::get`) | per-endpoint different keys on one model |
+| Errors | 404/422/5xx/4xx typed exceptions, JSON bodies; configurable errors key (`errors_key`, dot notation) | non-JSON error bodies are preserved as empty `body` |
+| Envelopes | `dataKey` (read, dot notation via `Arr::get`); `requestDataKey` (write side, wraps POST/PUT/PATCH body) | per-endpoint different keys on one model |
+| HTTP verbs | GET, POST, DELETE; PUT or PATCH for updates — configurable per client via `update_method` | — |
 | Relations | hasMany/hasOne (FK filter or nested URL), belongsTo | many-to-many, eager loading (`getMany` helps), embedded includes |
 | Events | creating/created/updating/updated/deleting/deleted, cancellation, Laravel bridge | wildcard observers |
-| Caching | PSR-16 GET caching, versioned invalidation, per-model (`$cacheTtl`) and per-chain (`withCache()`/`withoutCache()`) opt-in | HTTP ETag/Cache-Control (planned), per-client stores, cache tags |
+| Caching | PSR-16 GET caching, versioned invalidation, per-model (`$cacheTtl`) and per-chain (`withCache()`/`withoutCache()`) opt-in; cache key discriminates on headers | HTTP ETag/Cache-Control (planned), per-client stores, cache tags |
 | Testing | `Rest::fake()` with patterns + assertions, fixture server pattern | — |
 
 ## Live Verification
@@ -35,12 +36,17 @@ OpenAI-compatible endpoints, Anthropic. Findings from those runs:
 When building a query, the grammar is selected in this order:
 
 1. `protected ?string $grammar` on the model class (per-model override)
-2. `'grammar'` key in the client config / `ClientResolver::setGrammar()` (per-client default)
-3. `PlainGrammar` (package default)
+2. `'grammar'` key in the client config / `ClientResolver::setGrammar()` (per-client, explicit class)
+3. `'query'` key in the client config / `ClientResolver::setQueryConfig()` (per-client, `ConfigurableGrammar` — array or preset string)
+4. `PlainGrammar` (package default)
 
-Under `Rest::fake()` the config-level grammar is not honoured (the fake
-resolver returns `null` for `grammar()`). The model-level `$grammar` still
-applies. This is documented behaviour, acceptable for test contexts.
+Under `Rest::fake()` the inline resolver returns `null` for both `grammar()`
+and `queryConfig()`, so neither config-level grammar nor `ConfigurableGrammar`
+is active. The model-level `$grammar` property is still resolved (it is read
+from the model directly). The standalone `ClientResolver` also ignores the
+`options` argument passed to `client()` — if you need headers at the client
+level, pass them directly when constructing the `ClientInterface` instance.
+Both behaviours are intentional for test contexts.
 
 ## Custom Grammar
 
