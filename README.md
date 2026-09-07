@@ -1,6 +1,10 @@
 # Laravel Rest
 
 ![CI](https://github.com/sanchescom/laravel-rest/actions/workflows/ci.yml/badge.svg)
+![Latest Version](https://img.shields.io/packagist/v/sanchescom/laravel-rest.svg)
+![Downloads](https://img.shields.io/packagist/dt/sanchescom/laravel-rest.svg)
+![PHP Version](https://img.shields.io/packagist/php-v/sanchescom/laravel-rest.svg)
+![License](https://img.shields.io/packagist/l/sanchescom/laravel-rest.svg)
 
 Eloquent-like models and collections for consuming REST APIs.
 
@@ -8,10 +12,32 @@ Define a model, point it at an endpoint, and work with remote resources the way
 you work with Eloquent: `User::get()`, `User::get($id)`, `User::post([...])`,
 `$user->put()`, `User::delete($id)`.
 
+## Table of Contents
+
+- [Requirements](#requirements) · [Installation](#installation) · [Quick Start](#quick-start)
+- [Configuration](#configuration) · [Defining Models](#defining-models)
+- [Error Handling](#error-handling) · [Pagination](#pagination)
+- [Query Builder](#query-builder)
+- [Adapting to API Conventions](#adapting-to-api-conventions) — parameter
+  [names](#1-renaming-parameters), [sort styles](#2-sort-styles),
+  [filter styles](#3-filter-styles), [presets](#4-presets),
+  [casing](#5-field-casing), [headers](#6-dynamic-headers),
+  [error keys](#7-configuring-the-errors-key), [PATCH](#8-patch-updates),
+  [envelopes](#9-request-envelopes), [standalone](#10-standalone-resolver--setting-query-config),
+  [all together](#11-putting-it-all-together)
+- [Caching](#caching) · [Relations](#relations)
+- [Authentication](#authentication) · [Retry](#retry) · [Model Events](#model-events)
+- [Testing Your Application](#testing-your-application) · [Usage Outside Laravel](#usage-outside-laravel)
+- [Capability Matrix](#capability-matrix) · [Upgrading](#upgrading) · [Contributing](#contributing)
+
 ## Requirements
 
 - PHP 8.2+
 - Laravel 11 or 12
+
+> [!NOTE]
+> Laravel 11 reached end of life in 2026 (no more security fixes). The package
+> still supports and tests it, but new projects should target Laravel 12.
 
 ## Installation
 
@@ -52,7 +78,7 @@ class Post extends Model
 ```php
 $post  = Post::get(1);                  // GET posts/1        -> Post
 $posts = Post::get();                   // GET posts          -> Collection<Post>
-$mine  = $posts->where('userId', 1);    // any Illuminate collection method
+$mine  = $posts->where('userId', 1);    // in-memory collection filter (server-side: see Query Builder)
 $page  = $posts->paginate(10);          // LengthAwarePaginator
 
 $some  = Post::getMany([3, 1, 2]);      // concurrent requests, results in [3, 1, 2] order
@@ -60,6 +86,12 @@ $some  = Post::getMany([3, 1, 2]);      // concurrent requests, results in [3, 1
 $new   = Post::post(['title' => 'Hi', 'userId' => 1]);   // POST posts
 $upd   = Post::put(1, ['title' => 'Updated']);           // PUT posts/1
 Post::delete(1);                                          // DELETE posts/1
+
+// ...or update/delete through an instance using its own primary key:
+$post = Post::get(2);
+$post->title = 'Changed';
+$post->put();                           // PUT posts/2
+$post->delete();                        // DELETE posts/2
 
 Post::get(987654);                      // 404 -> throws ModelNotFoundException
 ```
@@ -103,7 +135,8 @@ return [
 ];
 ```
 
-> **Note:** `base_uri` must end with a trailing slash, and endpoints must not
+> [!NOTE]
+> `base_uri` must end with a trailing slash, and endpoints must not
 > start with one — that is how Guzzle resolves relative URIs.
 
 ## Defining Models
@@ -133,60 +166,6 @@ class User extends Model
     /** Per-model HTTP client options merged over the configured ones. */
     protected array $options = [];
 }
-```
-
-## Usage
-
-**Retrieving all models**
-
-```php
-$users = User::get(); // Sanchescom\Rest\Collection of User
-```
-
-**Retrieving a record by id**
-
-```php
-$user = User::get(1); // User
-```
-
-**Retrieving several records by id**
-
-```php
-$users = User::getMany([1, 2]); // results keep the order of the ids
-```
-
-The result is an Illuminate collection, so all the usual methods work:
-
-```php
-$bobs = User::get()->where('first_name', 'Bob');
-```
-
-**Creating**
-
-```php
-$user = User::post(['first_name' => 'Tim']);
-```
-
-**Updating**
-
-```php
-// by key
-User::put(2, ['email' => 'john@foo.com']);
-
-// or via an instance using its own primary key
-$user = User::get(2);
-$user->email = 'john@foo.com';
-$user->put();
-```
-
-**Deleting**
-
-```php
-User::delete(1);
-
-// or via an instance
-$user = User::get(1);
-$user->delete();
 ```
 
 ## Error Handling
@@ -223,7 +202,14 @@ $paginator = User::get()->paginate(15); // Illuminate LengthAwarePaginator
 
 ## Query Builder
 
-Filter, sort, and paginate without writing query strings by hand:
+Filter, sort, and paginate without writing query strings by hand.
+
+> [!IMPORTANT]
+> `Post::where(...)->get()` filters **on the server** — the conditions are
+> compiled into the query string and the API returns only matching records.
+> `Post::get()->where(...)` filters the **already-loaded collection in
+> memory** — it fetches everything first. For anything beyond trivial
+> datasets, prefer the builder form.
 
 ```php
 // Plain grammar (default) — ?status=active&sort=-created_at&limit=20
@@ -244,27 +230,24 @@ Post::where('status', 'draft')->first(); // first item of the collection
 Post::where('userId', 1)->count();       // count of matching items
 ```
 
-**JSON:API grammar** — produces `filter[field]`, `page[size]`, `page[number]`:
+**Other query conventions (JSON:API, Django, custom names)** — the preferred
+way is a one-word preset or a small config array on the client; see
+[Adapting to API Conventions](#adapting-to-api-conventions):
 
 ```php
-// Per-client (config/rest.php):
 'clients' => [
     'myapi' => [
         'provider' => 'guzzle',
-        'base_uri'  => 'https://api.example.com/',
-        'grammar'   => \Sanchescom\Rest\Query\JsonApiGrammar::class,
+        'base_uri' => 'https://api.example.com/',
+        'query'    => 'jsonapi',   // filter[field]=..., page[size]=..., page[number]=...
     ],
 ],
-
-// Per-model (overrides the client-level setting):
-class Article extends Model
-{
-    protected ?string $grammar = \Sanchescom\Rest\Query\JsonApiGrammar::class;
-}
 ```
 
-Grammars implement `Sanchescom\Rest\Query\Grammar` — use a custom class for
-any other query convention. See [docs/capabilities.md](docs/capabilities.md).
+For a truly custom query language, implement `Sanchescom\Rest\Query\Grammar`
+yourself and register the class per client (`'grammar' => MyGrammar::class`)
+or per model (`protected ?string $grammar = MyGrammar::class`). A grammar
+class always takes precedence over the `'query'` config.
 
 ## Adapting to API Conventions
 
@@ -360,17 +343,19 @@ Product::orderBy('price', 'desc')->orderBy('name')->get();
 
 ### 3. Filter Styles
 
-Three filter styles cover the most common conventions:
+Three filter styles cover the most common conventions. The operator (third
+argument of `where()`) is an arbitrary string passed through to the API —
+use whatever vocabulary your API defines (`gte`, `lte`, `like`, `in`, …):
 
-**`plain` (default)** — bare equality, operator in brackets for inequalities:
+**`plain` (default)** — bare equality, operator in brackets for everything else:
 
 ```php
 'query' => ['filters' => 'plain'],
 ```
 
 ```php
-Order::where('status', 'shipped')->where('total', '>', 100)->get();
-// GET orders?status=shipped&total[>]=100
+Order::where('status', 'shipped')->where('total', 'gte', 100)->get();
+// GET orders?status=shipped&total[gte]=100
 ```
 
 **`brackets`** — JSON:API-style `filter[field]`:
@@ -380,8 +365,8 @@ Order::where('status', 'shipped')->where('total', '>', 100)->get();
 ```
 
 ```php
-Order::where('status', 'shipped')->where('total', '>', 100)->get();
-// GET orders?filter[status]=shipped&filter[total][>]=100
+Order::where('status', 'shipped')->where('total', 'gte', 100)->get();
+// GET orders?filter[status]=shipped&filter[total][gte]=100
 ```
 
 **`django`** — Django REST Framework style with double-underscore lookups:
@@ -473,7 +458,8 @@ Tenant::withHeaders([
 // GET tenants?active=true   (headers: X-Tenant-ID: betacorp, Accept-Language: fr-FR)
 ```
 
-> **Note:** under `Rest::fake()` the inline resolver ignores the `options`
+> [!NOTE]
+> Under `Rest::fake()` the inline resolver ignores the `options`
 > argument passed to `client()`, so headers are **not** forwarded to the fake.
 > The fake sees bare requests with no custom headers. Similarly, the standalone
 > `ClientResolver` ignores the `options` argument — wire headers directly
@@ -554,6 +540,7 @@ Invoice::get(1);
 // → Invoice with attributes {id:1, number:"INV-001", total:500}
 ```
 
+> [!NOTE]
 > `$requestDataKey` wraps **write** bodies (POST/PUT/PATCH).
 > `$dataKey` unwraps **read** responses (GET). They are independent — you can
 > set one without the other.
@@ -737,6 +724,7 @@ cache keys):
 Post::flushCache(); // safe no-op when no store is configured
 ```
 
+> [!WARNING]
 > **External mutations are invisible.** If another service creates, updates, or
 > deletes records via the same API, this package has no way to know. Keep `$cacheTtl`
 > short enough for your consistency requirements, or call `Post::flushCache()`
@@ -930,17 +918,17 @@ with a fake that records every request and lets you assert against it.
 use Sanchescom\Rest\Rest;
 
 Rest::fake([
-    'posts'   => Rest::response(['id' => 1, 'title' => 'Hello']),
-    'posts/*' => Rest::response(['id' => 2, 'title' => 'Updated']),
+    'posts/*' => Rest::response(['id' => 1, 'title' => 'Hello']),
+    'posts'   => Rest::response(['id' => 2, 'title' => 'Created']),
 ]);
 
-$post = Post::get(1);                  // served from the fake
-Post::post(['title' => 'Hello']);
+$post = Post::get(1);                  // GET posts/1  -> {'id': 1, ...} from the fake
+Post::post(['title' => 'Created']);    // POST posts   -> {'id': 2, ...} from the fake
 
 Rest::assertSentCount(2);
 
 Rest::assertSent(function ($request) {
-    return $request->method() === 'GET' && $request->uri() === 'posts';
+    return $request->method() === 'GET' && $request->uri() === 'posts/1';
 });
 
 Rest::assertNotSent(function ($request) {
@@ -960,7 +948,8 @@ Patterns in the map use `Str::is()` matching (wildcards with `*`). Responses
 with a 4xx/5xx status code cause the fake to throw the same typed exception as
 the real client would.
 
-> **Important:** `Rest` uses PHPUnit's `Assert` internally. It is a
+> [!IMPORTANT]
+> `Rest` uses PHPUnit's `Assert` internally. It is a
 > test-context class — do not call `Rest::assertSent*` or `Rest::recorded()`
 > in production code.
 
