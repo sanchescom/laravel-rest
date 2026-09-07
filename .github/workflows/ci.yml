@@ -25,6 +25,9 @@ jobs:
         with:
           php-version: ${{ matrix.php }}
           coverage: none
+      # Laravel 11 is EOL and carries open advisories; the matrix tests it
+      # deliberately, so advisory blocking is disabled for CI resolution only.
+      - run: composer config policy.advisories.block false
       - run: >
           composer require --no-interaction --no-update
           "illuminate/support:${{ matrix.laravel }}"
