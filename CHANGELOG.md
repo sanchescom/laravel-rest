@@ -15,8 +15,8 @@ project adheres to [Semantic Versioning](https://semver.org/).
   and field-name casing (`snake`/`camel`).
 - **Presets** — `'query' => 'jsonapi'` (brackets filters, dash sort,
   `page[size]`/`page[number]`/`page[offset]`) and `'query' => 'django'`
-  (django filters, dash sort, `ordering`/`page_size`). Presets can be mixed
-  with overrides via `'preset' => 'jsonapi'` inside an array config.
+  (django filters, dash sort, renames `sort` → `ordering` and `limit` → `page_size`).
+  Presets can be mixed with overrides via `'preset' => 'jsonapi'` inside an array config.
 - **`queryConfig()` resolution** — `ClientManager` reads `rest.clients.<name>.query`
   from the config file; `ClientResolver` exposes `setQueryConfig()`. Resolution
   order: model `$grammar` → client `'grammar'` → client `'query'` → `PlainGrammar`.

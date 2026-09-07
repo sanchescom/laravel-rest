@@ -332,7 +332,8 @@ Product::orderBy('price', 'desc')->orderBy('name')->get();
 ```
 
 **`separate`** — two distinct parameters for field and direction (only the
-**first** `orderBy` is sent; additional calls are ignored):
+**first** `orderBy` is sent; additional calls are ignored). When `sort_names` is
+omitted, defaults are: field param `sort`, direction param `direction`:
 
 ```php
 'query' => [
@@ -643,7 +644,7 @@ Order::withHeaders(['Accept-Language' => 'de-DE'])
 
 // Create — body wrapped in 'data'
 Order::post(['customerEmail' => 'alice@example.com', 'totalAmount' => 99.90]);
-// PATCH orders   (update_method: patch)
+// POST orders
 // Body: {"data":{"customerEmail":"alice@example.com","totalAmount":99.9}}
 
 // Validation error — errors extracted from nested key
