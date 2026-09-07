@@ -1008,6 +1008,11 @@ Post::get(1); // works — no Laravel container involved
 See [docs/capabilities.md](docs/capabilities.md) for a full breakdown of what
 is supported, what is not, and how to extend it.
 
+## Roadmap
+
+See [ROADMAP.md](ROADMAP.md) for planned features (server-side pagination,
+eager loading, multipart bodies, OAuth2, and more).
+
 ## Upgrading
 
 See [UPGRADE.md](UPGRADE.md) for breaking-change notes between every major/minor version.
