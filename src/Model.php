@@ -59,6 +59,8 @@ class Model implements Arrayable, ArrayAccess, JsonSerializable
 
     protected ?string $dataKey = null;
 
+    protected ?string $requestDataKey = null;
+
     /** @var class-string|null */
     protected ?string $grammar = null;
 
@@ -348,6 +350,11 @@ class Model implements Arrayable, ArrayAccess, JsonSerializable
     public function getDataKey(): ?string
     {
         return $this->dataKey;
+    }
+
+    public function getRequestDataKey(): ?string
+    {
+        return $this->requestDataKey;
     }
 
     public function newBuilder(): Builder

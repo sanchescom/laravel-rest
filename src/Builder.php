@@ -172,7 +172,7 @@ final class Builder
             return null;
         }
 
-        $payload = $this->decode($this->client()->post($this->uri(), $model->getAttributes()));
+        $payload = $this->decode($this->client()->post($this->uri(), $this->envelope($model->getAttributes())));
 
         $created = $this->model->newInstance($this->extract($payload));
         $created->fireModelEvent('created');
@@ -198,7 +198,7 @@ final class Builder
             return null;
         }
 
-        $payload = $this->decode($this->client()->put($this->uri($id), $model->getAttributes()));
+        $payload = $this->decode($this->client()->put($this->uri($id), $this->envelope($model->getAttributes())));
 
         $updated = $this->model->newInstance($this->extract($payload));
         $updated->fireModelEvent('updated');
@@ -225,6 +225,17 @@ final class Builder
         ($this->model)::flushCache();
 
         return true;
+    }
+
+    /**
+     * @param  array<string, mixed>  $attributes
+     * @return array<string, mixed>
+     */
+    private function envelope(array $attributes): array
+    {
+        $key = $this->model->getRequestDataKey();
+
+        return $key === null ? $attributes : [$key => $attributes];
     }
 
     /**
