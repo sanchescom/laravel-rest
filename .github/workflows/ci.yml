@@ -13,6 +13,11 @@ jobs:
       matrix:
         php: ['8.2', '8.3', '8.4']
         laravel: ['11.*', '12.*']
+        include:
+          - laravel: '11.*'
+            testbench: '9.*'
+          - laravel: '12.*'
+            testbench: '10.*'
     name: PHP ${{ matrix.php }} / Laravel ${{ matrix.laravel }}
     steps:
       - uses: actions/checkout@v4
@@ -20,7 +25,12 @@ jobs:
         with:
           php-version: ${{ matrix.php }}
           coverage: none
-      - run: composer require "illuminate/support:${{ matrix.laravel }}" --no-interaction --no-update
+      - run: >
+          composer require --no-interaction --no-update
+          "illuminate/support:${{ matrix.laravel }}"
+          "illuminate/container:${{ matrix.laravel }}"
+          "illuminate/pagination:${{ matrix.laravel }}"
+      - run: composer require --dev --no-interaction --no-update "orchestra/testbench:${{ matrix.testbench }}"
       - run: composer update --prefer-dist --no-interaction
       - run: composer lint
       - run: composer analyse
