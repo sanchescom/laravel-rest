@@ -95,6 +95,11 @@ switch (true) {
         echo json_encode(['errors' => ['name' => ['Required.']]]);
         break;
 
+    case $path === 'invalid-nested' && $method === 'POST':
+        http_response_code(422);
+        echo json_encode(['error' => ['details' => ['name' => ['Required.']]]]);
+        break;
+
     case preg_match('#^posts/(\d+)/comments$#', $path, $m) === 1 && $method === 'GET':
         echo json_encode([['id' => 10, 'postId' => (int) $m[1]], ['id' => 11, 'postId' => (int) $m[1]]]);
         break;
