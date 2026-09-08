@@ -1,0 +1,12 @@
+# Keep development-only paths out of `composer require` installs.
+# Everything a consumer needs is shipped: src/, config/rest.php (merged and
+# published by the service provider), composer.json, the Markdown the README
+# links to, and LICENSE. The tooling and the test suite are not.
+/.github          export-ignore
+/.editorconfig    export-ignore
+/.gitattributes   export-ignore
+/.gitignore       export-ignore
+/tests            export-ignore
+/phpstan.neon     export-ignore
+/phpunit.xml      export-ignore
+/pint.json        export-ignore
