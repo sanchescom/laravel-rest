@@ -31,3 +31,17 @@ it('records every retry attempt with auth headers', function () {
             ->and($entry['request']->getHeaderLine('User-Agent'))->toBe(LiveContext::USER_AGENT);
     }
 })->group('integration');
+
+it('applies per-request options such as dynamic headers through the resolver', function () {
+    $context = new LiveContext('fixture', [
+        'name' => 'Fixture',
+        'base_uri' => FixtureServer::$baseUri,
+        'throttle_ms' => 0,
+        'scenarios' => [],
+    ]);
+
+    Model::getClientResolver()->client(null, ['headers' => ['X-Live-Check' => 'yes']])->get('echo');
+
+    expect($context->history[0]['request']->getHeaderLine('X-Live-Check'))->toBe('yes')
+        ->and($context->history[0]['request']->getHeaderLine('User-Agent'))->toBe(LiveContext::USER_AGENT);
+})->group('integration');

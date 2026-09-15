@@ -6,8 +6,10 @@ namespace Sanchescom\Rest\Tests\Live\Support;
 
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Middleware;
+use Illuminate\Config\Repository;
 use Psr\Http\Message\RequestInterface;
-use Sanchescom\Rest\ClientResolver;
+use Sanchescom\Rest\ClientManager;
+use Sanchescom\Rest\Clients\ClientFactory;
 use Sanchescom\Rest\Clients\GuzzleClient;
 use Sanchescom\Rest\Model;
 
@@ -49,50 +51,48 @@ final class LiveContext
     {
         $throttle = (int) ($this->api['throttle_ms'] ?? 250);
 
-        $stack = HandlerStack::create();
-
         $options = array_replace_recursive(
             ['timeout' => 20, 'headers' => ['User-Agent' => self::USER_AGENT, 'Accept' => 'application/json']],
             $config['options'] ?? [],
         );
-        $options['handler'] = $stack;
 
-        $client = GuzzleClient::fromConfig(
-            ['base_uri' => $this->api['base_uri'], 'options' => $options]
-            + array_intersect_key($config, array_flip(['auth', 'retry', 'errors_key', 'update_method'])),
-        );
+        $clientConfig = ['provider' => 'live', 'base_uri' => $this->api['base_uri'], 'options' => $options]
+            + array_intersect_key($config, array_flip([
+                'auth', 'retry', 'errors_key', 'update_method', 'query', 'grammar', 'pagination',
+            ]));
 
-        // Push history and throttle after fromConfig() so they wrap auth and retry middleware,
-        // recording every attempt with applied auth headers and throttling.
-        $stack->push(Middleware::history($this->history), 'live_history');
-        $stack->push(Middleware::mapRequest(function (RequestInterface $request) use ($throttle) {
-            $host = $request->getUri()->getHost();
-            $wait = (self::$lastRequestAt[$host] ?? 0.0) + $throttle / 1000 - microtime(true);
+        $repository = new Repository(['rest' => ['default' => 'live', 'clients' => ['live' => $clientConfig]]]);
 
-            if ($wait > 0) {
-                usleep((int) ($wait * 1_000_000));
-            }
+        $manager = new ClientManager($repository, new ClientFactory);
 
-            self::$lastRequestAt[$host] = microtime(true);
+        // ClientManager builds a fresh client per unique options hash (e.g. one per withHeaders() call),
+        // so each client needs its own handler stack: pushing history/throttle onto a shared stack would
+        // register them again on every new client and record/throttle each request multiple times.
+        $manager->extend('live', function (array $clientConfig) use ($throttle) {
+            $stack = HandlerStack::create();
+            $clientConfig['options']['handler'] = $stack;
 
-            return $request;
-        }), 'live_throttle');
+            $client = GuzzleClient::fromConfig($clientConfig);
 
-        $resolver = new ClientResolver(['live' => $client]);
-        $resolver->setDefaultClient('live');
+            // History and throttle sit inside auth and retry, closest to the transport,
+            // recording every attempt with applied auth headers and throttling.
+            $stack->push(Middleware::history($this->history), 'live_history');
+            $stack->push(Middleware::mapRequest(function (RequestInterface $request) use ($throttle) {
+                $host = $request->getUri()->getHost();
+                $wait = (self::$lastRequestAt[$host] ?? 0.0) + $throttle / 1000 - microtime(true);
 
-        if (isset($config['grammar'])) {
-            $resolver->setGrammar('live', $config['grammar']);
-        }
+                if ($wait > 0) {
+                    usleep((int) ($wait * 1_000_000));
+                }
 
-        if (isset($config['query'])) {
-            $resolver->setQueryConfig('live', $config['query']);
-        }
+                self::$lastRequestAt[$host] = microtime(true);
 
-        if (isset($config['pagination'])) {
-            $resolver->setPaginationConfig('live', $config['pagination']);
-        }
+                return $request;
+            }), 'live_throttle');
 
-        Model::setClientResolver($resolver);
+            return $client;
+        });
+
+        Model::setClientResolver($manager);
     }
 }
