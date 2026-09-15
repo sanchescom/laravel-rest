@@ -14,6 +14,7 @@ use Sanchescom\Rest\Cache\CachingClient;
 use Sanchescom\Rest\Contracts\ClientInterface;
 use Sanchescom\Rest\Exceptions\RestException;
 use Sanchescom\Rest\Pagination\PaginationConfig;
+use Sanchescom\Rest\Pagination\RemotePaginator;
 use Sanchescom\Rest\Query\Grammar;
 use Sanchescom\Rest\Query\PlainGrammar;
 use Sanchescom\Rest\Query\QueryState;
@@ -202,6 +203,26 @@ final class Builder
     }
 
     /**
+     * @return Paginator<int, Model>
+     */
+    public function simplePaginate(int $perPage = 15, string $pageName = 'page', ?int $page = null): Paginator
+    {
+        $config = $this->model->getPaginationConfig() ?? new PaginationConfig;
+
+        $page = $this->forPage($config, $perPage, $pageName, $page);
+        $payload = $this->fetchPayload();
+        $items = $this->hydrate($this->extract($payload));
+
+        return new RemotePaginator(
+            $items,
+            $perPage,
+            $this->hasMorePages($config, $payload, $items->count(), $perPage),
+            $page,
+            $this->paginatorOptions($pageName),
+        );
+    }
+
+    /**
      * @param  array<string, mixed>  $data
      */
     public function post(array $data = []): ?Model
@@ -306,6 +327,25 @@ final class Builder
     private function paginatorOptions(string $pageName): array
     {
         return ['path' => Paginator::resolveCurrentPath(), 'pageName' => $pageName];
+    }
+
+    /**
+     * @param  array<mixed>  $payload
+     */
+    private function hasMorePages(PaginationConfig $config, array $payload, int $count, int $perPage): bool
+    {
+        if ($config->next !== null) {
+            $next = Arr::get($payload, $config->next);
+
+            return is_string($next) && $next !== '';
+        }
+
+        if ($config->hasMore !== null) {
+            return Arr::get($payload, $config->hasMore) === true;
+        }
+
+        // ponytail: an exactly-full last page reports one extra empty page; configure 'next' or 'has_more' to avoid it.
+        return $count === $perPage;
     }
 
     /**

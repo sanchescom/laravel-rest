@@ -185,3 +185,47 @@ it('rejects an explicit page below one', function () {
 
     PagedPost::paginate(15, 'page', 0);
 })->throws(InvalidArgumentException::class, 'Page must be at least 1, [0] given.');
+
+it('builds a simple paginator from a next link', function (?string $next, bool $hasMore) {
+    pagedClient(['limit' => 2, 'page' => 1], ['data' => [['id' => 1], ['id' => 2]], 'links' => ['next' => $next]]);
+
+    $paginator = PagedPost::simplePaginate(2, 'page', 1);
+
+    expect($paginator)->toBeInstanceOf(Paginator::class)
+        ->and($paginator->hasMorePages())->toBe($hasMore)
+        ->and($paginator->count())->toBe(2)
+        ->and($paginator->items()[0])->toBeInstanceOf(PagedPost::class);
+})->with([
+    'next link present' => ['https://api.test/paged_posts?page=2', true],
+    'next link null' => [null, false],
+    'next link empty' => ['', false],
+]);
+
+it('builds a simple paginator from a has-more flag', function (mixed $flag, bool $hasMore) {
+    pagedClient(['limit' => 2, 'page' => 1], ['data' => [], 'meta' => ['has_more' => $flag]], ['has_more' => 'meta.has_more']);
+
+    expect(PagedPost::simplePaginate(2, 'page', 1)->hasMorePages())->toBe($hasMore);
+})->with([
+    'true' => [true, true],
+    'false' => [false, false],
+    'truthy but not true' => [1, false],
+]);
+
+it('infers more pages from a full page without metadata config', function (int $items, bool $hasMore) {
+    pagedClient(
+        ['limit' => 3, 'page' => 1],
+        ['data' => array_map(fn (int $id) => ['id' => $id], range(1, $items))],
+        null,
+    );
+
+    expect(PagedPost::simplePaginate(3, 'page', 1)->hasMorePages())->toBe($hasMore);
+})->with([
+    'full page' => [3, true],
+    'partial page' => [2, false],
+]);
+
+it('uses the offset style for simple pagination', function () {
+    pagedClient(['limit' => 5, 'offset' => 5], ['data' => []], ['style' => 'offset']);
+
+    expect(PagedPost::simplePaginate(5, 'page', 2)->currentPage())->toBe(2);
+});
