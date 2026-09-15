@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/) and this
 project adheres to [Semantic Versioning](https://semver.org/).
 
+## 1.3.1
+
+### Fixed
+
+- **`getMany` transport failures** — a connection error (timeout, refused,
+  DNS) on any request in the pool surfaced as a `TypeError` from an undefined
+  response slot. It now rethrows the original Guzzle `ConnectException`,
+  matching `get()`.
+
 ## 1.3.0
 
 ### Added

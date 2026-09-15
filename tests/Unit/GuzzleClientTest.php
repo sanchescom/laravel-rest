@@ -3,9 +3,11 @@
 declare(strict_types=1);
 
 use GuzzleHttp\Client;
+use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Middleware;
+use GuzzleHttp\Psr7\Request;
 use GuzzleHttp\Psr7\Response;
 use Sanchescom\Rest\Clients\GuzzleClient;
 use Sanchescom\Rest\Exceptions\ModelNotFoundException;
@@ -103,6 +105,13 @@ it('getMany throws when any response is an error', function () {
     makeClient([new Response(200, [], '{}'), new Response(404, [], '{}')])
         ->getMany(['users/1', 'users/2']);
 })->throws(ModelNotFoundException::class);
+
+it('getMany rethrows transport failures like get does', function () {
+    makeClient([
+        new Response(200, [], '{}'),
+        new ConnectException('Connection refused', new Request('GET', 'users/2')),
+    ])->getMany(['users/1', 'users/2']);
+})->throws(ConnectException::class, 'Connection refused');
 
 it('builds itself from config', function () {
     $client = GuzzleClient::fromConfig([

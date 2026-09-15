@@ -150,6 +150,10 @@ final class GuzzleClient implements ClientInterface
             'fulfilled' => function (ResponseInterface $response, int|string $key) use (&$responses) {
                 $responses[$key] = $response;
             },
+            // http_errors is off, so only transport failures land here; surface them as get() does.
+            'rejected' => function (mixed $reason) {
+                throw $reason;
+            },
         ]);
 
         $pool->promise()->wait();
