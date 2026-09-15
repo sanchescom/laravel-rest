@@ -49,6 +49,31 @@ final class Probes
         'cache.memo' => 'Request memoization',
     ];
 
+    /** Required scenario keys per probe, checked by the network-free catalog lint. */
+    public const REQUIRED = [
+        'list' => ['model'],
+        'find' => ['model', 'id'],
+        'get-many' => ['model', 'ids'],
+        'filter' => ['model', 'field', 'value'],
+        'where-in' => ['model', 'field', 'values'],
+        'sort' => ['model', 'field'],
+        'paginate' => ['model'],
+        'simple-paginate' => ['model'],
+        'lazy' => ['model', 'chunk', 'take'],
+        'belongs-to' => ['model', 'id', 'relation', 'foreign_key'],
+        'has-many' => ['model', 'id', 'relation'],
+        'eager' => ['model', 'relation'],
+        'write' => ['model', 'op'],
+        'not-found' => ['model', 'id'],
+        'status' => ['model', 'status'],
+        'auth' => ['model', 'client'],
+        'headers' => ['model', 'headers'],
+        'retry' => ['model', 'status', 'attempts'],
+        'cache' => ['model', 'kind'],
+        'unsupported' => ['reason', 'features'],
+        'custom' => ['run', 'features'],
+    ];
+
     /** @var array<string, class-string<Probe>> */
     private const PROBES = [
         'list' => ListProbe::class,
