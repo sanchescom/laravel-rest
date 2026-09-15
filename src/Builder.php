@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sanchescom\Rest;
 
+use Closure;
 use Illuminate\Container\Container;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\Paginator;
@@ -21,6 +22,7 @@ use Sanchescom\Rest\Pagination\RemotePaginator;
 use Sanchescom\Rest\Query\Grammar;
 use Sanchescom\Rest\Query\PlainGrammar;
 use Sanchescom\Rest\Query\QueryState;
+use Sanchescom\Rest\Relations\EagerLoader;
 use Sanchescom\Rest\Support\Json;
 
 final class Builder
@@ -37,6 +39,9 @@ final class Builder
 
     /** @var array<string, string> */
     private array $headers = [];
+
+    /** @var array<int|string, string|Closure> */
+    private array $eagerLoad = [];
 
     public function __construct(
         private readonly Model $model,
@@ -63,6 +68,16 @@ final class Builder
     public function whereIn(string $field, array $values): self
     {
         return $this->where($field, 'in', array_values(array_unique($values, SORT_REGULAR)));
+    }
+
+    /**
+     * @param  string|array<int|string, string|Closure>  $relations
+     */
+    public function with(string|array $relations): self
+    {
+        $this->eagerLoad = array_merge($this->eagerLoad, is_string($relations) ? [$relations] : $relations);
+
+        return $this;
     }
 
     public function orderBy(string $field, string $direction = 'asc'): self
@@ -156,7 +171,14 @@ final class Builder
     {
         $payload = $this->fetchPayload($id);
 
-        return $id !== null ? $this->hydrateOne($payload) : $this->hydrateMany($payload);
+        if ($id === null) {
+            return $this->loadRelations($this->hydrateMany($payload));
+        }
+
+        $model = $this->hydrateOne($payload);
+        $this->loadRelations($this->model->newCollection([$model]));
+
+        return $model;
     }
 
     /**
@@ -173,7 +195,7 @@ final class Builder
             $this->client()->getMany($uris),
         );
 
-        return $this->hydrate($items);
+        return $this->loadRelations($this->hydrate($items));
     }
 
     /**
@@ -246,7 +268,7 @@ final class Builder
         }
 
         return Container::getInstance()->makeWith(LengthAwarePaginator::class, [
-            'items' => $this->hydrate($this->extract($payload)),
+            'items' => $this->loadRelations($this->hydrate($this->extract($payload))),
             'total' => (int) $total,
             'perPage' => $perPage,
             'currentPage' => $page,
@@ -263,7 +285,7 @@ final class Builder
 
         $page = $this->forPage($config, $perPage, $pageName, $page);
         $payload = $this->fetchPayload();
-        $items = $this->hydrate($this->extract($payload));
+        $items = $this->loadRelations($this->hydrate($this->extract($payload)));
 
         return new RemotePaginator(
             $items,
@@ -295,7 +317,7 @@ final class Builder
             for ($page = 1; ; $page++) {
                 $this->forPage($config, $chunkSize, 'page', $page);
                 $payload = $this->fetchPayload();
-                $items = $this->hydrate($this->extract($payload));
+                $items = $this->loadRelations($this->hydrate($this->extract($payload)));
 
                 if ($items->isEmpty()) {
                     return;
@@ -494,6 +516,19 @@ final class Builder
         return $this->model->newCollection(
             array_map(fn (mixed $item) => $this->model->newInstance(is_array($item) ? $item : []), array_values($items)),
         );
+    }
+
+    /**
+     * @param  Collection<int, Model>  $models
+     * @return Collection<int, Model>
+     */
+    private function loadRelations(Collection $models): Collection
+    {
+        if ($this->eagerLoad !== [] && $models->isNotEmpty()) {
+            (new EagerLoader)->load($models, $this->eagerLoad);
+        }
+
+        return $models;
     }
 
     private function uri(string|int|null $id = null): string

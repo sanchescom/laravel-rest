@@ -33,6 +33,7 @@ use Sanchescom\Rest\Query\PlainGrammar;
  * @method static bool delete(string|int|null $id = null)
  * @method static Builder where(string $field, mixed $operator = null, mixed $value = null)
  * @method static Builder whereIn(string $field, array<int, mixed> $values)
+ * @method static Builder with(string|array<int|string, string|\Closure> $relations)
  * @method static Builder orderBy(string $field, string $direction = 'asc')
  * @method static Builder limit(int $limit)
  * @method static Builder offset(int $offset)

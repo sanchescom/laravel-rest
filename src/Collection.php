@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace Sanchescom\Rest;
 
+use Closure;
 use Illuminate\Container\Container;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Collection as BaseCollection;
+use Sanchescom\Rest\Relations\EagerLoader;
 
 /**
  * @template TKey of array-key
@@ -38,5 +40,17 @@ class Collection extends BaseCollection
                 'pageName' => $pageName,
             ],
         ]);
+    }
+
+    /**
+     * Eager load relations onto the models in this collection.
+     *
+     * @param  string|array<int|string, string|Closure>  $relations
+     */
+    public function load(string|array $relations): static
+    {
+        (new EagerLoader)->load($this, is_string($relations) ? [$relations] : $relations);
+
+        return $this;
     }
 }
