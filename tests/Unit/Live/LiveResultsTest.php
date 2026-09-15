@@ -11,8 +11,14 @@ beforeEach(function () {
 
 afterEach(function () {
     putenv('LIVE_RESULTS');
-    @unlink($this->resultsPath);
-    @rmdir(dirname($this->resultsPath));
+
+    if (is_file($this->resultsPath)) {
+        unlink($this->resultsPath);
+    }
+
+    if (is_dir(dirname($this->resultsPath))) {
+        rmdir(dirname($this->resultsPath));
+    }
 });
 
 it('appends results and reads the last one per scenario', function () {

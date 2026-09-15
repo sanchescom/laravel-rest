@@ -16,6 +16,18 @@ function liveCatalogDir(array $files): string
     return $dir;
 }
 
+afterEach(function () {
+    // Clean up temp directories created by liveCatalogDir()
+    foreach (glob(sys_get_temp_dir().'/laravel-rest-catalog-*', GLOB_ONLYDIR) as $dir) {
+        foreach (glob("{$dir}/*.php") as $file) {
+            unlink($file);
+        }
+        if (is_dir($dir)) {
+            rmdir($dir);
+        }
+    }
+});
+
 it('builds a dataset of every api scenario sorted by slug', function () {
     $dir = liveCatalogDir([
         'zeta' => "<?php return ['name' => 'Zeta', 'base_uri' => 'https://z/', 'scenarios' => ['list' => ['probe' => 'list']]];",
