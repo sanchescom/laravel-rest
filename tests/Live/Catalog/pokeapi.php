@@ -39,7 +39,7 @@ return [
         'pagination' => ['style' => 'offset', 'total' => 'count', 'next' => 'next'],
     ],
     'scenarios' => [
-        'list pokemon' => ['probe' => 'list', 'model' => Pokemon::class, 'min' => 20, 'fields' => ['name', 'url'], 'features' => ['grammar.plain']],
+        'list pokemon' => ['probe' => 'list', 'model' => Pokemon::class, 'min' => 20, 'fields' => ['name', 'url']],
         'find pokemon by name' => ['probe' => 'find', 'model' => PokemonDetail::class, 'id' => 'pikachu', 'fields' => ['id', 'types']],
         'get many pokemon' => ['probe' => 'get-many', 'model' => PokemonDetail::class, 'ids' => ['bulbasaur', 'ivysaur', 'venusaur']],
         'paginate pokemon' => ['probe' => 'paginate', 'model' => Pokemon::class, 'per_page' => 50],

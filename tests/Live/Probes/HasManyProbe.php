@@ -25,5 +25,11 @@ final class HasManyProbe extends AbstractProbe
                 expect((string) $item->getAttribute($scenario['foreign_key']))->toBe((string) $parent->getKey());
             }
         }
+
+        if (! empty($scenario['nested'])) {
+            $last = $context->history[array_key_last($context->history)]['request'];
+
+            expect(str_ends_with($last->getUri()->getPath(), (string) $scenario['path_suffix']))->toBeTrue();
+        }
     }
 }

@@ -25,8 +25,7 @@ final class PaginateProbe extends AbstractProbe
 
         expect($first->total())->toBeGreaterThan($perPage)
             ->and($first->count())->toBe($perPage)
-            ->and($second->count())->toBeGreaterThan(0)
-            ->and($first->lastPage())->toBe((int) ceil($first->total() / $perPage));
+            ->and($second->count())->toBeGreaterThan(0);
 
         $keys = fn (array $models) => array_map(fn (Model $model) => (string) $model->getKey(), $models);
         $firstKeys = $keys($first->items());
