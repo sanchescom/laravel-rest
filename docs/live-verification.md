@@ -1,8 +1,8 @@
 # Live Verification
 
-Generated 2026-09-15 17:47 UTC from `1.6.0-6-g712ccac` by `composer live:catalog && composer live:report`. Do not edit by hand.
+Generated 2026-09-15 18:17 UTC from `1.6.0-8-gfc16ee5-dirty` by `composer live:catalog && composer live:report`. Do not edit by hand.
 
-3 APIs, 44 scenarios: ✅ 41 passed · ❌ 0 failed · ⏭ 0 skipped (API unavailable) · 🚫 3 unsupported.
+3 APIs, 44 scenarios: ✅ 41 passed · ❌ 0 failed · ⏭ 0 skipped (API unavailable) · 🚫 3 unsupported · ⬜ 0 not run.
 
 ## Feature coverage
 
@@ -18,7 +18,7 @@ A feature counts as confirmed on an API when at least one of its scenarios passe
 | `query.filter` | Filter on the server (where) | ⚠️ 1 | JSONPlaceholder |  |  | PokéAPI |
 | `query.where-in` | Membership filter (whereIn) | ⚠️ 0 |  |  |  | JSONPlaceholder |
 | `query.sort` | Sort on the server (orderBy) | ⚠️ 1 | JSONPlaceholder |  |  | PokéAPI |
-| `grammar.plain` | Plain grammar | ⚠️ 1 | PokéAPI |  |  |  |
+| `grammar.plain` | Plain grammar | ⚠️ 0 |  |  |  |  |
 | `grammar.jsonapi` | JSON:API grammar | ⚠️ 0 |  |  |  |  |
 | `grammar.django` | Django grammar | ⚠️ 0 |  |  |  |  |
 | `grammar.configurable` | Configurable grammar (names, sort styles, casing) | ⚠️ 1 | JSONPlaceholder |  |  |  |
@@ -68,5 +68,9 @@ _None._
 - **PokéAPI › list filters** — PokéAPI list endpoints accept only offset and limit.
 
 ## Skipped (API unavailable during the run)
+
+_None._
+
+## Not run
 
 _None._
