@@ -38,7 +38,7 @@ final class LiveResults
             'reason' => $reason,
             'requests' => $requests,
             'at' => date(DATE_ATOM),
-        ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
+        ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE | JSON_THROW_ON_ERROR);
 
         file_put_contents($path, $line."\n", FILE_APPEND | LOCK_EX);
     }

@@ -24,14 +24,20 @@ final class AuthProbe extends AbstractProbe
         match ($auth['driver']) {
             'bearer' => expect($sent->getHeaderLine('Authorization'))->toBe('Bearer '.$auth['token']),
             'basic' => expect($sent->getHeaderLine('Authorization'))->toBe('Basic '.base64_encode($auth['username'].':'.$auth['password'])),
-            'header' => array_map(
-                fn (string $name) => expect($sent->getHeaderLine($name))->toBe($auth['headers'][$name]),
-                array_keys($auth['headers']),
-            ),
+            'header' => (function () use ($sent, $auth) {
+                foreach (array_keys($auth['headers']) as $name) {
+                    expect($sent->getHeaderLine($name))->toBe($auth['headers'][$name]);
+                }
+            })(),
         };
 
         if (isset($scenario['unauthenticated_status'])) {
-            new LiveContext($context->slug, $context->api);
+            $api = $context->api;
+            unset($api['client']['auth']);
+
+            // Constructing a context swaps the global client resolver (Model::setClientResolver),
+            // so this unauthenticated context becomes the one the next builder call uses.
+            new LiveContext($context->slug, $api);
 
             $this->expectStatus(
                 fn () => $this->builder($scenario)->get($scenario['id'] ?? null),

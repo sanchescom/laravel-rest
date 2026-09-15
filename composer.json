@@ -29,9 +29,10 @@
     },
     "scripts": {
         "test": "./vendor/bin/pest --exclude-group=live",
-        "test:live": "./vendor/bin/pest --group=live",
+        "test:live": "./vendor/bin/pest --group=live --exclude-group=catalog",
         "live:catalog": [
-            "@php -r \"file_exists('build/live/results.jsonl') && unlink('build/live/results.jsonl');\"",
+            "Composer\\Config::disableProcessTimeout",
+            "@php tests/Live/bin/reset.php",
             "./vendor/bin/pest tests/Live/CatalogTest.php"
         ],
         "live:report": "@php tests/Live/bin/report.php",
