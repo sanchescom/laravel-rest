@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/) and this
 project adheres to [Semantic Versioning](https://semver.org/).
 
-## 1.4.0 (unreleased)
+## 1.4.0
 
 ### Added
 
@@ -14,7 +14,7 @@ project adheres to [Semantic Versioning](https://semver.org/).
   inference. Configured per client via `'pagination'` (presets `laravel`,
   `django`, `jsonapi`, or explicit `total` / `next` / `has_more` dot paths and
   `style` `page`|`offset`), overridable with the model `$pagination` property.
-- **`PaginationConfigResolver`** — optional interface implemented by
+- **`PaginationConfigResolverInterface`** — optional interface implemented by
   `ClientManager`, `ClientResolver` and the `Rest::fake()` resolver (which
   delegates to the previous resolver). `ClientResolverInterface` is unchanged.
 

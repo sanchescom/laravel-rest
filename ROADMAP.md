@@ -5,13 +5,13 @@ Priorities are driven by three sources: the [capability matrix](docs/capabilitie
 and review findings parked across the 1.0–1.3 release cycles. Order within a
 release is indicative, not binding.
 
-## 1.4 — Complete Reads
+## 1.5 — Complete Reads (continued)
 
-The features you hit on day one of consuming a real API.
+The features you hit on day one of consuming a real API. Pagination shipped
+in 1.4.0; the rest follows.
 
-- ~~**Server-side pagination with metadata.**~~ Done: `paginate()` /
-  `simplePaginate()` with `'pagination'` client config. Cursor/Link-header
-  pagination remains a follow-up layer.
+- **Cursor / Link-header pagination.** `cursorPaginate()` as a follow-up
+  layer on top of 1.4.0's `paginate()` / `simplePaginate()`.
 - **Eager loading.** `Post::with('comments')->get()` — collect parent keys,
   batch the relation via a single `whereIn` query when the API supports it,
   falling back to concurrent `getMany` by id; distribute onto instances.
@@ -30,7 +30,7 @@ The features you hit on day one of consuming a real API.
   responses for consecutive matching requests; needed to test retry and
   polling flows.
 
-## 1.5 — Transport and Integrations
+## 1.6 — Transport and Integrations
 
 Widening the set of APIs the package can talk to.
 
@@ -95,3 +95,4 @@ Widening the set of APIs the package can talk to.
 | 1.1.0 | Features: query builder + grammars, relations, auth, retry, fakes, events |
 | 1.2.0 | Response caching: PSR-16, versioned invalidation, write-through |
 | 1.3.0 | API conventions: configurable names/sorts/filters, presets, dynamic headers, error keys, PATCH, envelopes |
+| 1.4.0 | Server-side pagination: `paginate()` / `simplePaginate()` from response metadata, pagination presets |

@@ -7,9 +7,9 @@ namespace Sanchescom\Rest;
 use InvalidArgumentException;
 use Sanchescom\Rest\Contracts\ClientInterface;
 use Sanchescom\Rest\Contracts\ClientResolverInterface;
-use Sanchescom\Rest\Contracts\PaginationConfigResolver;
+use Sanchescom\Rest\Contracts\PaginationConfigResolverInterface;
 
-class ClientResolver implements ClientResolverInterface, PaginationConfigResolver
+class ClientResolver implements ClientResolverInterface, PaginationConfigResolverInterface
 {
     protected ?string $default = null;
 

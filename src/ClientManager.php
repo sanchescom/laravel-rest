@@ -9,9 +9,9 @@ use InvalidArgumentException;
 use Sanchescom\Rest\Clients\ClientFactory;
 use Sanchescom\Rest\Contracts\ClientInterface;
 use Sanchescom\Rest\Contracts\ClientResolverInterface;
-use Sanchescom\Rest\Contracts\PaginationConfigResolver;
+use Sanchescom\Rest\Contracts\PaginationConfigResolverInterface;
 
-class ClientManager implements ClientResolverInterface, PaginationConfigResolver
+class ClientManager implements ClientResolverInterface, PaginationConfigResolverInterface
 {
     /** @var array<string, ClientInterface> */
     protected array $clients = [];

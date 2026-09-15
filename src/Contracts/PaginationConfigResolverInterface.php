@@ -8,7 +8,7 @@ namespace Sanchescom\Rest\Contracts;
  * Optional companion to ClientResolverInterface; kept separate so custom
  * resolvers do not break. Folds into the resolver context DTO in 2.0.
  */
-interface PaginationConfigResolver
+interface PaginationConfigResolverInterface
 {
     /**
      * Pagination config for the client (array, preset string, or null).

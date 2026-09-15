@@ -14,7 +14,7 @@ use Psr\SimpleCache\CacheInterface;
 use Sanchescom\Rest\Cache\CacheKeys;
 use Sanchescom\Rest\Contracts\ClientInterface;
 use Sanchescom\Rest\Contracts\ClientResolverInterface;
-use Sanchescom\Rest\Contracts\PaginationConfigResolver;
+use Sanchescom\Rest\Contracts\PaginationConfigResolverInterface;
 use Sanchescom\Rest\Pagination\PaginationConfig;
 use Sanchescom\Rest\Query\ConfigurableGrammar;
 use Sanchescom\Rest\Query\PlainGrammar;
@@ -370,7 +370,7 @@ class Model implements Arrayable, ArrayAccess, JsonSerializable
     {
         $config = $this->pagination;
 
-        if ($config === null && static::$resolver instanceof PaginationConfigResolver) {
+        if ($config === null && static::$resolver instanceof PaginationConfigResolverInterface) {
             $config = static::$resolver->paginationConfig($this->client);
         }
 
