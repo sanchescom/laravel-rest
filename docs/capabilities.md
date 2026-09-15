@@ -1,6 +1,6 @@
 # Capability Matrix
 
-What laravel-rest supports as of 1.4.0 — and what it deliberately does not.
+What laravel-rest supports as of 1.5.0 — and what it deliberately does not.
 
 | Area | Supported | Not supported (workaround) |
 | --- | --- | --- |

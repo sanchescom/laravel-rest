@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/) and this
 project adheres to [Semantic Versioning](https://semver.org/).
 
-## 1.5.0 (unreleased)
+## 1.5.0
 
 ### Added
 
@@ -18,8 +18,16 @@ project adheres to [Semantic Versioning](https://semver.org/).
   hit the API once while still returning fresh model instances. Writes forget
   the written model's entries; `withoutCache()` and `lazy()` bypass it; the
   service provider resets it on Octane `RequestReceived` and queue
-  `JobProcessing`. `Rest::fake()` / `Rest::restore()` and `Rest::flushMemo()`
-  clear it.
+  `JobProcessing` (plus Octane task and tick workers). `Rest::fake()` /
+  `Rest::restore()` and `Rest::flushMemo()` clear it.
+
+### Changed
+
+- **Invalidation now happens before write events.** `post()`, `put()` and
+  `delete()` flush the model's response cache (and memo) before firing
+  `created` / `updated` / `deleted` and the `ModelCreated` / `ModelUpdated` /
+  `ModelDeleted` dispatcher events, so listeners that re-read the model see
+  fresh data instead of the pre-write cache entry.
 
 ## 1.4.0
 

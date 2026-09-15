@@ -5,10 +5,10 @@ Priorities are driven by three sources: the [capability matrix](docs/capabilitie
 and review findings parked across the 1.0–1.3 release cycles. Order within a
 release is indicative, not binding.
 
-## 1.5 — Complete Reads (continued)
+## 1.6 — Complete Reads (continued)
 
 The features you hit on day one of consuming a real API. Pagination shipped
-in 1.4.0; the rest follows.
+in 1.4.0, lazy iteration and request memoization in 1.5.0; the rest follows.
 
 - **Cursor / Link-header pagination.** `cursorPaginate()` as a follow-up
   layer on top of 1.4.0's `paginate()` / `simplePaginate()`.
@@ -16,10 +16,6 @@ in 1.4.0; the rest follows.
   batch the relation via a single `whereIn` query when the API supports it,
   falling back to concurrent `getMany` by id; distribute onto instances.
   Eliminates the HTTP N+1 that lazy relations currently produce.
-- ~~**Per-request identity map.**~~ Done as opt-in request memoization of GET
-  responses (`rest.memoize`); fresh model instances per call.
-- ~~**Lazy iteration.**~~ Done: `Post::lazy()` walks every page with the 1.4
-  pagination rules; README shows the sync-into-a-table recipe.
 - **Explicit attribute mapping.** `protected array $attributeMap = ['createdAt' => 'created_at']`
   — dictionary-based bidirectional renaming (read hydration and write bodies),
   deliberately not automatic casing conversion (rejected in the 1.3 design:
@@ -28,7 +24,7 @@ in 1.4.0; the rest follows.
   responses for consecutive matching requests; needed to test retry and
   polling flows.
 
-## 1.6 — Transport and Integrations
+## 1.7 — Transport and Integrations
 
 Widening the set of APIs the package can talk to.
 
@@ -94,3 +90,4 @@ Widening the set of APIs the package can talk to.
 | 1.2.0 | Response caching: PSR-16, versioned invalidation, write-through |
 | 1.3.0 | API conventions: configurable names/sorts/filters, presets, dynamic headers, error keys, PATCH, envelopes |
 | 1.4.0 | Server-side pagination: `paginate()` / `simplePaginate()` from response metadata, pagination presets |
+| 1.5.0 | `lazy()` page iteration, opt-in per-request memoization of GET responses |
