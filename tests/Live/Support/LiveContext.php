@@ -25,7 +25,16 @@ final class LiveContext
     public array $history = [];
 
     /** @var array<string, float> */
-    private static array $lastRequestAt = [];
+    private static array $nextSlotAt = [];
+
+    /**
+     * Test-only: clear reserved host slots so a fresh test isn't delayed by a
+     * previous test's throttling on the same host.
+     */
+    public static function resetThrottle(): void
+    {
+        self::$nextSlotAt = [];
+    }
 
     /**
      * @param  array<string, mixed>  $api
@@ -74,21 +83,23 @@ final class LiveContext
 
             $client = GuzzleClient::fromConfig($clientConfig);
 
-            // History and throttle sit inside auth and retry, closest to the transport,
-            // recording every attempt with applied auth headers and throttling.
-            $stack->push(Middleware::history($this->history), 'live_history');
-            $stack->push(Middleware::mapRequest(function (RequestInterface $request) use ($throttle) {
+            // Throttle and history sit inside auth and retry, closest to the transport,
+            // recording every attempt with applied auth headers and its throttle delay.
+            // Throttle wraps history (pushed first, so it's the outer of the two) so the
+            // non-blocking delay it reserves is visible in the recorded options — a Pool
+            // of concurrent requests (getMany, eager loads) mustn't all send at once, so
+            // instead of blocking with usleep() it reserves a per-host send slot and lets
+            // Guzzle's handler apply the wait asynchronously via the 'delay' option.
+            $stack->push(fn (callable $handler) => function (RequestInterface $request, array $options) use ($handler, $throttle) {
                 $host = $request->getUri()->getHost();
-                $wait = (self::$lastRequestAt[$host] ?? 0.0) + $throttle / 1000 - microtime(true);
+                $now = microtime(true);
+                $slot = max($now, self::$nextSlotAt[$host] ?? 0.0);
+                self::$nextSlotAt[$host] = $slot + $throttle / 1000;
+                $options['delay'] = max((int) ($options['delay'] ?? 0), (int) round(($slot - $now) * 1000));
 
-                if ($wait > 0) {
-                    usleep((int) ($wait * 1_000_000));
-                }
-
-                self::$lastRequestAt[$host] = microtime(true);
-
-                return $request;
-            }), 'live_throttle');
+                return $handler($request, $options);
+            }, 'live_throttle');
+            $stack->push(Middleware::history($this->history), 'live_history');
 
             return $client;
         });

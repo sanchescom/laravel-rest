@@ -45,3 +45,25 @@ it('applies per-request options such as dynamic headers through the resolver', f
     expect($context->history[0]['request']->getHeaderLine('X-Live-Check'))->toBe('yes')
         ->and($context->history[0]['request']->getHeaderLine('User-Agent'))->toBe(LiveContext::USER_AGENT);
 })->group('integration');
+
+it('throttles concurrent requests per host without blocking the pool', function () {
+    LiveContext::resetThrottle();
+
+    $context = new LiveContext('fixture-throttle', [
+        'name' => 'Fixture',
+        'base_uri' => FixtureServer::$baseUri,
+        'throttle_ms' => 300,
+        'scenarios' => [],
+    ]);
+
+    Model::getClientResolver()->client()->getMany(['echo?n=1', 'echo?n=2', 'echo?n=3']);
+
+    expect($context->history)->toHaveCount(3);
+
+    $delays = array_map(fn (array $entry) => (int) ($entry['options']['delay'] ?? 0), $context->history);
+    sort($delays);
+
+    expect($delays[0])->toBeGreaterThanOrEqual(0)
+        ->and($delays[1])->toBeGreaterThanOrEqual(250)
+        ->and($delays[2])->toBeGreaterThanOrEqual(550);
+})->group('integration');
