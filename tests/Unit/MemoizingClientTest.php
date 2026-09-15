@@ -8,7 +8,7 @@ use Sanchescom\Rest\Cache\MemoizingClient;
 use Sanchescom\Rest\Contracts\ClientInterface;
 use Sanchescom\Rest\Exceptions\RestException;
 
-afterEach(fn () => Memo::flush());
+afterEach(fn () => Memo::enable(false));
 
 it('returns the memoized response without calling the inner client', function () {
     $inner = Mockery::mock(ClientInterface::class);
