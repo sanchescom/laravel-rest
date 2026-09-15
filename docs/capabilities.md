@@ -20,6 +20,8 @@ What laravel-rest supports as of 1.6.0 — and what it deliberately does not.
 
 ## Live Verification
 
+The generated, per-feature matrix lives in [live-verification.md](live-verification.md).
+
 Verified against: JSONPlaceholder, httpbin, job-api (internal),
 OpenAI-compatible endpoints, Anthropic. Findings from those runs:
 
