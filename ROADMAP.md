@@ -19,9 +19,8 @@ in 1.4.0; the rest follows.
 - **Per-request identity map.** Repeated `find()` of the same key within one
   application request (typically `belongsTo` across a collection) hits HTTP
   once. Scoped to the request lifecycle, never shared across requests.
-- **Lazy iteration.** `Post::lazy()` walks every page on top of the
-  pagination metadata above; also the building block for syncing API data
-  into local tables (documented recipe, no dedicated converter).
+- ~~**Lazy iteration.**~~ Done: `Post::lazy()` walks every page with the 1.4
+  pagination rules; README shows the sync-into-a-table recipe.
 - **Explicit attribute mapping.** `protected array $attributeMap = ['createdAt' => 'created_at']`
   — dictionary-based bidirectional renaming (read hydration and write bodies),
   deliberately not automatic casing conversion (rejected in the 1.3 design:

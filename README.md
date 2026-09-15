@@ -243,6 +243,30 @@ client's `query` conventions (e.g. `page[number]`, `page_size`).
   are not, so faked requests send plain `page` / `limit` / `offset` names —
   write `assertSent` expectations accordingly.
 
+### Iterating all pages
+
+`lazy()` returns a `LazyCollection` that requests one page at a time (100
+models per request by default) and stops on an empty page or when the
+pagination metadata reports no more pages — the same rules as
+`simplePaginate()`. Nothing is requested until you iterate, and iterating
+again repeats the requests.
+
+```php
+foreach (Post::where('status', 'active')->lazy() as $post) {
+    // ...
+}
+
+// Mirror an API resource into a local table
+Post::lazy(50)->chunk(500)->each(
+    fn ($posts) => DbPost::upsert($posts->map->toArray()->values()->all(), ['id']),
+);
+```
+
+Keep the chunk size at or below the API's maximum page size: without `next`
+or `has_more` configured, a short page ends the iteration. If the API ignores
+the page parameter and sends the same page again, `lazy()` throws a
+`RestException` instead of looping forever.
+
 ### In memory
 
 ```php

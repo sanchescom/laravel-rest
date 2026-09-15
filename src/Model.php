@@ -8,6 +8,7 @@ use ArrayAccess;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\Paginator;
+use Illuminate\Support\LazyCollection;
 use Illuminate\Support\Str;
 use JsonSerializable;
 use Psr\SimpleCache\CacheInterface;
@@ -38,6 +39,7 @@ use Sanchescom\Rest\Query\PlainGrammar;
  * @method static int count()
  * @method static LengthAwarePaginator<int, static> paginate(int $perPage = 15, string $pageName = 'page', ?int $page = null)
  * @method static Paginator<int, static> simplePaginate(int $perPage = 15, string $pageName = 'page', ?int $page = null)
+ * @method static LazyCollection<int, static> lazy(int $chunkSize = 100)
  * @method static Builder withCache(?int $ttl = null)
  * @method static Builder withoutCache()
  * @method static Builder withHeaders(array<string, string> $headers)

@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/) and this
 project adheres to [Semantic Versioning](https://semver.org/).
 
+## 1.5.0 (unreleased)
+
+### Added
+
+- **`lazy(int $chunkSize = 100)`** — returns a `LazyCollection` that walks
+  every page with the 1.4 pagination rules (`page`/`offset` style, `next`,
+  `has_more`, full-page inference) and stops on an empty page. Throws
+  `RestException` when the API returns the same page twice (keyed models only),
+  so a misconfigured page parameter cannot loop forever.
+
 ## 1.4.0
 
 ### Added

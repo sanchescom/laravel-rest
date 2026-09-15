@@ -8,6 +8,7 @@ use Illuminate\Container\Container;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Arr;
+use Illuminate\Support\LazyCollection;
 use InvalidArgumentException;
 use Psr\Http\Message\ResponseInterface;
 use Sanchescom\Rest\Cache\CachingClient;
@@ -220,6 +221,52 @@ final class Builder
             $page,
             $this->paginatorOptions($pageName),
         );
+    }
+
+    /**
+     * Iterate every page, requesting $chunkSize models at a time.
+     *
+     * @return LazyCollection<int, Model>
+     */
+    public function lazy(int $chunkSize = 100): LazyCollection
+    {
+        if ($chunkSize < 1) {
+            throw new InvalidArgumentException("Chunk size must be at least 1, [{$chunkSize}] given.");
+        }
+
+        return LazyCollection::make(function () use ($chunkSize) {
+            $config = $this->model->getPaginationConfig() ?? new PaginationConfig;
+            $previousKeys = null;
+
+            for ($page = 1; ; $page++) {
+                $this->forPage($config, $chunkSize, 'page', $page);
+                $payload = $this->fetchPayload();
+                $items = $this->hydrate($this->extract($payload));
+
+                if ($items->isEmpty()) {
+                    return;
+                }
+
+                $keys = $items->map(fn (Model $model) => $model->getKey())->all();
+
+                if (! in_array(null, $keys, true) && $keys === $previousKeys) {
+                    throw new RestException(sprintf(
+                        "API returned the same page twice for [%s]; check the pagination 'style' and query 'names'.",
+                        $this->model::class,
+                    ));
+                }
+
+                $previousKeys = $keys;
+
+                foreach ($items as $item) {
+                    yield $item;
+                }
+
+                if (! $this->hasMorePages($config, $payload, $items->count(), $chunkSize)) {
+                    return;
+                }
+            }
+        });
     }
 
     /**
