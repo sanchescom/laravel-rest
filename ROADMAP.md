@@ -16,9 +16,8 @@ in 1.4.0; the rest follows.
   batch the relation via a single `whereIn` query when the API supports it,
   falling back to concurrent `getMany` by id; distribute onto instances.
   Eliminates the HTTP N+1 that lazy relations currently produce.
-- **Per-request identity map.** Repeated `find()` of the same key within one
-  application request (typically `belongsTo` across a collection) hits HTTP
-  once. Scoped to the request lifecycle, never shared across requests.
+- ~~**Per-request identity map.**~~ Done as opt-in request memoization of GET
+  responses (`rest.memoize`); fresh model instances per call.
 - ~~**Lazy iteration.**~~ Done: `Post::lazy()` walks every page with the 1.4
   pagination rules; README shows the sync-into-a-table recipe.
 - **Explicit attribute mapping.** `protected array $attributeMap = ['createdAt' => 'created_at']`

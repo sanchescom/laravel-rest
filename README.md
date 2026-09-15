@@ -835,6 +835,41 @@ Post::withCache(60)->get(1);
 `psr/simple-cache` is a suggested dependency; install it alongside whichever
 PSR-16 adapter you choose.
 
+### Request memoization
+
+Identical GET requests inside one application request can hit the API once.
+It is off by default:
+
+```php
+// config/rest.php
+'memoize' => (bool) env('REST_MEMOIZE', false),
+
+// or at runtime
+Rest::memoize();
+```
+
+```php
+$comments = Comment::where('postId', 1)->get();
+
+foreach ($comments as $comment) {
+    echo $comment->author->name; // one request per distinct author, not per comment
+}
+```
+
+- Successful responses are remembered by client, model, URI, query and
+  headers; every call still returns new model instances.
+- A successful `post()` / `put()` / `delete()` forgets the written model's
+  entries; `Model::flushCache()` and `Rest::flushMemo()` clear them manually.
+- `withoutCache()` skips memoization too, and `lazy()` never memoizes.
+- A memo hit is served before the response cache, so the cache store is not
+  touched.
+- The service provider resets memoization when an Octane request starts and
+  before each queue job. In FPM it lives for one request anyway.
+
+> [!WARNING]
+> Keep it off (or call `Rest::flushMemo()`) in long-running Artisan commands
+> that poll an API for changes — they are one "request" for their whole run.
+
 ### Testing with fakes
 
 `Rest::fake()` and caching compose correctly. The fake is the inner client;

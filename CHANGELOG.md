@@ -13,6 +13,13 @@ project adheres to [Semantic Versioning](https://semver.org/).
   `has_more`, full-page inference) and stops on an empty page. Throws
   `RestException` when the API returns the same page twice (keyed models only),
   so a misconfigured page parameter cannot loop forever.
+- **Request memoization** — opt-in (`'memoize' => true` / `REST_MEMOIZE`, or
+  `Rest::memoize()`): identical GET requests during one application request
+  hit the API once while still returning fresh model instances. Writes forget
+  the written model's entries; `withoutCache()` and `lazy()` bypass it; the
+  service provider resets it on Octane `RequestReceived` and queue
+  `JobProcessing`. `Rest::fake()` / `Rest::restore()` and `Rest::flushMemo()`
+  clear it.
 
 ## 1.4.0
 

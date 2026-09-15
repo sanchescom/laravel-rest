@@ -15,7 +15,7 @@ What laravel-rest supports as of 1.4.0 — and what it deliberately does not.
 | HTTP verbs | GET, POST, DELETE; PUT or PATCH for updates — configurable per client via `update_method` | — |
 | Relations | hasMany/hasOne (FK filter or nested URL), belongsTo | many-to-many, eager loading (`getMany` helps), embedded includes |
 | Events | creating/created/updating/updated/deleting/deleted, cancellation, Laravel bridge | wildcard observers |
-| Caching | PSR-16 GET caching, versioned invalidation, per-model (`$cacheTtl`) and per-chain (`withCache()`/`withoutCache()`) opt-in; cache key discriminates on headers | HTTP ETag/Cache-Control (planned), per-client stores, cache tags |
+| Caching | PSR-16 GET caching, versioned invalidation, per-model (`$cacheTtl`) and per-chain (`withCache()`/`withoutCache()`) opt-in; cache key discriminates on headers; opt-in per-request memoization of GET responses (`rest.memoize`), reset per Octane request and queue job | HTTP ETag/Cache-Control (planned), per-client stores, cache tags |
 | Testing | `Rest::fake()` with patterns + assertions, fixture server pattern | — |
 
 ## Live Verification
