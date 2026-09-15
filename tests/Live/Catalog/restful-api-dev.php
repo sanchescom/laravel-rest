@@ -97,7 +97,7 @@ return [
             'probe' => 'unsupported',
             'features' => ['paginate.total', 'paginate.simple', 'paginate.lazy', 'query.sort', 'query.filter'],
             'reason' => 'Whole collection is returned in one response; page params are ignored; only an id-membership filter exists (no generic field=value filter).',
-            'attempt' => ['probe' => 'filter', 'model' => ObjectModel::class, 'field' => 'name', 'value' => 'definitely-not-a-real-name'],
+            'attempt' => ['probe' => 'filter', 'model' => ObjectModel::class, 'field' => 'name', 'value' => 'Apple MacBook Pro 16'],
         ],
     ],
 ];

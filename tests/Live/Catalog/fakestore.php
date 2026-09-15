@@ -73,7 +73,8 @@ return [
         'pagination' => [
             'probe' => 'unsupported',
             'features' => ['paginate.total', 'paginate.simple', 'paginate.lazy'],
-            'reason' => 'Only a limit parameter exists; page/offset params are silently ignored and there is no total in the response.',
+            'reason' => 'Only a limit parameter exists; page/offset params are silently ignored (the default page style applies but the API ignores page) and there is no total in the response.',
+            'attempt' => ['probe' => 'paginate', 'model' => Product::class, 'per_page' => 5],
         ],
     ],
 ];

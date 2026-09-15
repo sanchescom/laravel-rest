@@ -66,7 +66,7 @@ return [
         'kind' => 'echo',
         'response' => 'echo {args,data,json,headers,url}',
         'errors' => '/status/{code} -> {"status":code}',
-        'auth' => '/basic-auth (postman:password), validated',
+        'auth' => '/basic-auth (postman:password), validated; bearer and header auth are echoed only, not validated',
         'writes' => 'verb-specific paths /post /put /patch /delete, not persisted',
     ],
     'scenarios' => [
