@@ -12,10 +12,8 @@ in 1.4.0, lazy iteration and request memoization in 1.5.0; the rest follows.
 
 - **Cursor / Link-header pagination.** `cursorPaginate()` as a follow-up
   layer on top of 1.4.0's `paginate()` / `simplePaginate()`.
-- **Eager loading.** `Post::with('comments')->get()` — collect parent keys,
-  batch the relation via a single `whereIn` query when the API supports it,
-  falling back to concurrent `getMany` by id; distribute onto instances.
-  Eliminates the HTTP N+1 that lazy relations currently produce.
+- ~~**Eager loading.**~~ Done: `with()` / `load()`, concurrent per parent or one
+  `whereIn` request with `batch()`.
 - **Explicit attribute mapping.** `protected array $attributeMap = ['createdAt' => 'created_at']`
   — dictionary-based bidirectional renaming (read hydration and write bodies),
   deliberately not automatic casing conversion (rejected in the 1.3 design:

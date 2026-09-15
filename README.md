@@ -298,6 +298,9 @@ Post::offset(30)->limit(15)->get(); // ?offset=30&limit=15
 // Extra / non-standard params
 Post::withQuery(['include' => 'author'])->get();
 
+// Membership filter — ?status=draft,review (rendered per grammar)
+Post::whereIn('status', ['draft', 'review'])->get();
+
 // Convenience
 Post::where('status', 'draft')->first(); // first item of the collection
 Post::where('userId', 1)->count();       // count of matching items
@@ -938,6 +941,50 @@ $post->comments()->where('approved', true)->get();
 Foreign-key name defaults to camelCase class name + `Id`
 (`postId` for `Post`, `userId` for `User`). Pass the key explicitly to
 override: `$this->hasMany(Comment::class, 'post_id')`.
+
+### Eager loading
+
+Load relations for a whole result set at once instead of one request per
+model when a relation is first read:
+
+```php
+$posts = Post::with(['comments.author', 'author'])->get();
+$posts = Post::with(['comments' => fn (Builder $query) => $query->orderBy('createdAt', 'desc')])->paginate(20);
+
+$posts->load('comments');   // on an already fetched collection
+```
+
+`with()` works with `get()`, `get($id)`, `first()`, `getMany()`,
+`paginate()`, `simplePaginate()` and every page of `lazy()`. Loaded relations
+are cached on each model, so reading `$post->comments` afterwards sends
+nothing.
+
+By default each relation loads **concurrently** — one request per parent
+(`comments?postId=1`, `comments?postId=2`, …) or per distinct foreign key
+(`users/7`, `users/8`), sent together. That works with any API.
+
+When an endpoint accepts a membership filter, mark the relation with
+`batch()` to load it in **one** request:
+
+```php
+public function comments(): HasMany
+{
+    return $this->hasMany(Comment::class)->batch();   // GET comments?postId=1,2,3
+}
+
+public function author(): BelongsTo
+{
+    return $this->belongsTo(User::class)->batch();    // GET users?id=7,8
+}
+```
+
+- The filter is rendered by the client's grammar: `postId=1,2,3` (plain),
+  `filter[postId]=1,2,3` (JSON:API) or `postId__in=1,2,3` (django). Set
+  `'in' => 'array'` in the `query` config to send `postId[0]=1&postId[1]=2`.
+  Custom `Grammar` classes must handle the `in` operator.
+- `limit()` or `page()` inside a batched constraint limit the whole batch, not
+  each parent.
+- Nested URL relations (`nested()`) cannot be batched.
 
 ## Authentication
 

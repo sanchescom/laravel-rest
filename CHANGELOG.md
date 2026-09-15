@@ -4,6 +4,29 @@ All notable changes to this project will be documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/) and this
 project adheres to [Semantic Versioning](https://semver.org/).
 
+## 1.6.0 (unreleased)
+
+### Added
+
+- **Eager loading** — `Builder::with()` and `Collection::load()` load
+  relations for a whole result set: concurrently per parent by default, or in
+  one `whereIn` request for relations marked `->batch()`. Supports dot nesting
+  (`comments.author`) and constraint closures, and applies to `get()`,
+  `first()`, `getMany()`, `paginate()`, `simplePaginate()` and `lazy()` pages.
+- **`whereIn()`** — membership filter rendered by every built-in grammar
+  (`field=1,2`, `filter[field]=1,2`, `field__in=1,2`); `ConfigurableGrammar`
+  gains `'in' => 'comma' | 'array'`.
+- **`Model::setRelation()` / `Model::relationFor()`** and
+  `Relation::eagerLoad()` for custom relations.
+
+### Changed
+
+- **`where($field, 'in', [...])`** now renders like `whereIn()` instead of the
+  unusable `field[in][0]=…`. Custom `Grammar` implementations should handle
+  the `in` operator.
+- **`Rest::fake()`** matches patterns against the path of URIs that carry a
+  query string; `RecordedRequest::query()` holds the parsed values.
+
 ## 1.5.0
 
 ### Added
