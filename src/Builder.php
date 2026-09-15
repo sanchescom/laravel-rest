@@ -4,11 +4,16 @@ declare(strict_types=1);
 
 namespace Sanchescom\Rest;
 
+use Illuminate\Container\Container;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Arr;
+use InvalidArgumentException;
 use Psr\Http\Message\ResponseInterface;
 use Sanchescom\Rest\Cache\CachingClient;
 use Sanchescom\Rest\Contracts\ClientInterface;
 use Sanchescom\Rest\Exceptions\RestException;
+use Sanchescom\Rest\Pagination\PaginationConfig;
 use Sanchescom\Rest\Query\Grammar;
 use Sanchescom\Rest\Query\PlainGrammar;
 use Sanchescom\Rest\Query\QueryState;
@@ -135,7 +140,7 @@ final class Builder
      */
     public function get(string|int|null $id = null): Model|Collection
     {
-        $payload = $this->decode($this->client()->get($this->uri($id), $this->grammar->compile($this->state)));
+        $payload = $this->fetchPayload($id);
 
         if ($id !== null) {
             return $this->model->newInstance($this->extract($payload));
@@ -159,6 +164,41 @@ final class Builder
         );
 
         return $this->hydrate($items);
+    }
+
+    /**
+     * @return LengthAwarePaginator<int, Model>
+     */
+    public function paginate(int $perPage = 15, string $pageName = 'page', ?int $page = null): LengthAwarePaginator
+    {
+        $config = $this->model->getPaginationConfig();
+
+        if ($config === null || $config->total === null) {
+            throw new RestException(sprintf(
+                "Pagination total key is not configured for [%s]; set 'pagination.total' or use simplePaginate().",
+                $this->model::class,
+            ));
+        }
+
+        $page = $this->forPage($config, $perPage, $pageName, $page);
+        $payload = $this->fetchPayload();
+        $total = Arr::get($payload, $config->total);
+
+        if (! is_int($total) && ! (is_string($total) && ctype_digit($total))) {
+            throw new RestException(sprintf(
+                'Pagination total key [%s] is missing or not an integer in the response for [%s].',
+                $config->total,
+                $this->model::class,
+            ));
+        }
+
+        return Container::getInstance()->makeWith(LengthAwarePaginator::class, [
+            'items' => $this->hydrate($this->extract($payload)),
+            'total' => (int) $total,
+            'perPage' => $perPage,
+            'currentPage' => $page,
+            'options' => $this->paginatorOptions($pageName),
+        ]);
     }
 
     /**
@@ -225,6 +265,47 @@ final class Builder
         ($this->model)::flushCache();
 
         return true;
+    }
+
+    /**
+     * @return array<mixed>
+     */
+    private function fetchPayload(string|int|null $id = null): array
+    {
+        return $this->decode($this->client()->get($this->uri($id), $this->grammar->compile($this->state)));
+    }
+
+    private function forPage(PaginationConfig $config, int $perPage, string $pageName, ?int $page): int
+    {
+        if ($perPage < 1) {
+            throw new InvalidArgumentException("Per page must be at least 1, [{$perPage}] given.");
+        }
+
+        if ($page !== null && $page < 1) {
+            throw new InvalidArgumentException("Page must be at least 1, [{$page}] given.");
+        }
+
+        $page ??= max(1, (int) Paginator::resolveCurrentPage($pageName));
+
+        $this->state->limit = $perPage;
+
+        if ($config->style === 'offset') {
+            $this->state->offset = ($page - 1) * $perPage;
+            $this->state->page = null;
+        } else {
+            $this->state->page = $page;
+            $this->state->offset = null;
+        }
+
+        return $page;
+    }
+
+    /**
+     * @return array{path: string, pageName: string}
+     */
+    private function paginatorOptions(string $pageName): array
+    {
+        return ['path' => Paginator::resolveCurrentPath(), 'pageName' => $pageName];
     }
 
     /**

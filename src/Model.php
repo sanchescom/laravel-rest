@@ -6,6 +6,7 @@ namespace Sanchescom\Rest;
 
 use ArrayAccess;
 use Illuminate\Contracts\Support\Arrayable;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Str;
 use JsonSerializable;
 use Psr\SimpleCache\CacheInterface;
@@ -34,6 +35,7 @@ use Sanchescom\Rest\Query\PlainGrammar;
  * @method static Builder withQuery(array<string, mixed> $params)
  * @method static Model|null first()
  * @method static int count()
+ * @method static LengthAwarePaginator<int, static> paginate(int $perPage = 15, string $pageName = 'page', ?int $page = null)
  * @method static Builder withCache(?int $ttl = null)
  * @method static Builder withoutCache()
  * @method static Builder withHeaders(array<string, string> $headers)
