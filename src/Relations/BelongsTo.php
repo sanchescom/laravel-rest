@@ -96,10 +96,14 @@ class BelongsTo extends Relation
             return $builder;
         }, $keys);
 
-        return $related->newCollection(array_map(
+        $collection = $related->newCollection(array_map(
             fn (Builder $builder, array $payload) => $builder->hydrateOne($payload),
             $builders,
             $builders[0]->getEach($builders),
         ));
+
+        $builders[0]->loadRelations($collection);
+
+        return $collection;
     }
 }

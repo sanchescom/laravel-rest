@@ -159,9 +159,7 @@ final class Builder
 
     public function count(): int
     {
-        $result = $this->get();
-
-        return $result instanceof Collection ? $result->count() : 1;
+        return $this->hydrateMany($this->fetchPayload())->count();
     }
 
     /**
@@ -519,10 +517,12 @@ final class Builder
     }
 
     /**
+     * @internal
+     *
      * @param  Collection<int, Model>  $models
      * @return Collection<int, Model>
      */
-    private function loadRelations(Collection $models): Collection
+    public function loadRelations(Collection $models): Collection
     {
         if ($this->eagerLoad !== [] && $models->isNotEmpty()) {
             (new EagerLoader)->load($models, $this->eagerLoad);

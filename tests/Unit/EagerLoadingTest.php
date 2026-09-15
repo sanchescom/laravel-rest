@@ -415,3 +415,26 @@ it('reuses memoized relation responses', function () {
 
     Rest::assertSentCount(4);
 });
+
+it('honours with inside a constraint in both loading modes', function (string $relation, int $requests) {
+    Rest::fake([
+        'posts' => Rest::response([['id' => 1], ['id' => 2]]),
+        'comments' => Rest::response([['id' => 10, 'postId' => 1, 'userId' => 7]]),
+        'users/7' => Rest::response(['id' => 7, 'name' => 'Ann']),
+    ]);
+
+    $posts = EagerPost::with([$relation => fn (Builder $query) => $query->with('author')])->get();
+
+    expect($posts[0]->{$relation}[0]->author->name)->toBe('Ann');
+    Rest::assertSentCount($requests);
+})->with([
+    'concurrent' => ['comments', 4],
+    'batched' => ['batchedComments', 3],
+]);
+
+it('counts without eager loading', function () {
+    Rest::fake(['posts' => Rest::response([['id' => 1, 'userId' => 7]])]);
+
+    expect(EagerPost::with('author')->count())->toBe(1);
+    Rest::assertSentCount(1);
+});

@@ -168,6 +168,8 @@ class HasMany extends Relation
             $groups[(string) $parent->getKey()] = array_values($builders[$index]->hydrateMany($payloads[$index])->all());
         }
 
+        $builders[0]->loadRelations(new Collection(array_merge([], ...array_values($groups))));
+
         return $groups;
     }
 }
