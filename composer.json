@@ -30,6 +30,11 @@
     "scripts": {
         "test": "./vendor/bin/pest --exclude-group=live",
         "test:live": "./vendor/bin/pest --group=live",
+        "live:catalog": [
+            "@php -r \"file_exists('build/live/results.jsonl') && unlink('build/live/results.jsonl');\"",
+            "./vendor/bin/pest tests/Live/CatalogTest.php"
+        ],
+        "live:report": "@php tests/Live/bin/report.php",
         "lint": "./vendor/bin/pint --test",
         "fix": "./vendor/bin/pint",
         "analyse": "./vendor/bin/phpstan analyse"
