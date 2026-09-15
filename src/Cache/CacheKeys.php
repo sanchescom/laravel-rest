@@ -25,4 +25,18 @@ final class CacheKeys
     {
         return 'rest:v:'.md5($modelClass);
     }
+
+    /**
+     * @param  array<string, mixed>  $query
+     */
+    public static function memo(?string $client, string $modelClass, string $uri, array $query, ?string $extra = null): string
+    {
+        return md5(implode('|', [
+            $client ?? '',
+            $modelClass,
+            $uri,
+            serialize($query),
+            $extra ?? '',
+        ]));
+    }
 }
