@@ -73,9 +73,12 @@ final class Builder
     /**
      * @param  string|array<int|string, string|Closure>  $relations
      */
-    public function with(string|array $relations): self
+    public function with(string|array $relations, string ...$more): self
     {
-        $this->eagerLoad = array_merge($this->eagerLoad, is_string($relations) ? [$relations] : $relations);
+        $this->eagerLoad = array_merge(
+            $this->eagerLoad,
+            array_merge(is_string($relations) ? [$relations] : $relations, $more),
+        );
 
         return $this;
     }
@@ -152,9 +155,13 @@ final class Builder
 
     public function first(): ?Model
     {
-        $result = $this->get();
+        $model = $this->hydrateMany($this->fetchPayload())->first();
 
-        return $result instanceof Collection ? $result->first() : $result;
+        if ($model !== null) {
+            $this->loadRelations($this->model->newCollection([$model]));
+        }
+
+        return $model;
     }
 
     public function count(): int
@@ -306,6 +313,7 @@ final class Builder
         }
 
         // ponytail: lazy walks can be huge; memoizing every page would pin them all in memory for the request.
+        // ponytail: relations eager loaded per page still memoize when memo is on; call Rest::flushMemo() in long walks if that matters.
         $this->memoDisabled = true;
 
         return LazyCollection::make(function () use ($chunkSize) {

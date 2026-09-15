@@ -43,19 +43,64 @@ class BelongsTo extends Relation
             default => $this->loadEach($related, $keys, $constraint),
         };
 
-        $byKey = [];
-
-        foreach ($loaded as $model) {
-            $byKey[(string) $model->getKey()] = $model;
-        }
+        // Concurrent mode: match by the requested key, not the response's own
+        // getKey() — a response without an id field (or a foreign key that
+        // isn't the related primary key) must still resolve eagerly.
+        // Batched mode: the whereIn response can't be aligned by request
+        // order, so it's matched by each model's own primary key.
+        $byKey = $this->batch ? $this->keyByOwnKey($loaded) : $this->keyByRequestedKey($keys, $loaded);
 
         foreach ($parents as $parent) {
             $key = $parent->getAttribute($foreignKey);
+            $key = $key === '' ? null : $key;
 
             $parent->setRelation($name, $key === null ? null : ($byKey[(string) $key] ?? null));
         }
 
         return $loaded;
+    }
+
+    /**
+     * @param  list<mixed>  $keys
+     * @param  Collection<int, Model>  $loaded  aligned with $keys, same order
+     * @return array<string, Model>
+     */
+    private function keyByRequestedKey(array $keys, Collection $loaded): array
+    {
+        $byKey = [];
+
+        foreach ($loaded as $index => $model) {
+            $key = $keys[$index] ?? null;
+
+            if ($key === null || $key === '') {
+                continue;
+            }
+
+            $byKey[(string) $key] = $model;
+        }
+
+        return $byKey;
+    }
+
+    /**
+     * @param  Collection<int, Model>  $loaded
+     * @return array<string, Model>
+     */
+    private function keyByOwnKey(Collection $loaded): array
+    {
+        $byKey = [];
+
+        foreach ($loaded as $model) {
+            $key = $model->getKey();
+
+            if ($key === null || $key === '') {
+                continue;
+            }
+
+            $byKey[(string) $key] = $model;
+        }
+
+        return $byKey;
     }
 
     private function foreignKeyName(): string
@@ -82,7 +127,7 @@ class BelongsTo extends Relation
 
     /**
      * @param  list<mixed>  $keys
-     * @return Collection<int, Model>
+     * @return Collection<int, Model> aligned with $keys, same order — callers match by request index
      */
     private function loadEach(Model $related, array $keys, ?Closure $constraint): Collection
     {

@@ -60,6 +60,20 @@ class EagerPost extends Model
     {
         return new EagerCustomRelation($this, EagerUser::class);
     }
+
+    public function sluggedAuthor(): BelongsTo
+    {
+        return $this->belongsTo(EagerSluggedUser::class, 'authorSlug')->batch();
+    }
+}
+
+class EagerSluggedUser extends Model
+{
+    protected ?string $endpoint = 'slugged_users';
+
+    protected ?string $dataKey = null;
+
+    protected string $primaryKey = 'slug';
 }
 
 class EagerComment extends Model
@@ -438,4 +452,71 @@ it('counts without eager loading', function () {
 
     expect(EagerPost::with('author')->count())->toBe(1);
     Rest::assertSentCount(1);
+});
+
+it('matches concurrent belongsTo by the requested key', function () {
+    Rest::fake(['users/7' => Rest::response(['name' => 'Ann'])]);
+    $posts = eagerPosts([['id' => 1, 'userId' => 7]]);
+
+    (new EagerLoader)->load($posts, ['author']);
+
+    expect($posts[0]->author->name)->toBe('Ann');
+});
+
+it('does not match blank foreign keys to keyless models', function () {
+    Rest::fake(['users' => Rest::response([['name' => 'noid']])]);
+    $posts = eagerPosts([['id' => 1, 'userId' => ''], ['id' => 2, 'userId' => 7]]);
+
+    (new EagerLoader)->load($posts, ['batchedAuthor']);
+
+    expect($posts[0]->batchedAuthor)->toBeNull()
+        ->and($posts[1]->batchedAuthor)->toBeNull();
+});
+
+it('batches belongsTo by a custom primary key and keeps key zero', function () {
+    Rest::fake(['slugged_users' => Rest::response([
+        ['slug' => 'ann', 'name' => 'Ann'],
+        ['slug' => 0, 'name' => 'Zero'],
+    ])]);
+    $posts = eagerPosts([['id' => 1, 'authorSlug' => 'ann'], ['id' => 2, 'authorSlug' => 0]]);
+
+    (new EagerLoader)->load($posts, ['sluggedAuthor']);
+
+    expect($posts[0]->sluggedAuthor->name)->toBe('Ann')
+        ->and($posts[1]->sluggedAuthor->name)->toBe('Zero');
+    Rest::assertSent(fn ($request) => $request->uri() === 'slugged_users' && $request->query() === ['slug' => 'ann,0']);
+});
+
+it('eager loads only the first model', function () {
+    Rest::fake([
+        'posts' => Rest::response([['id' => 1, 'userId' => 7], ['id' => 2, 'userId' => 8]]),
+        'users/*' => Rest::response(['id' => 7]),
+    ]);
+
+    EagerPost::with('author')->first();
+
+    Rest::assertSentCount(2);
+});
+
+it('accepts relations as separate arguments', function () {
+    Rest::fake([
+        'posts' => Rest::response([['id' => 1, 'userId' => 7]]),
+        'users/7' => Rest::response(['id' => 7]),
+        'comments' => Rest::response([]),
+    ]);
+
+    $posts = EagerPost::with('author', 'comments')->get();
+    Rest::assertSentCount(3);
+
+    $posts->load('author', 'latestComment');
+    Rest::assertSentCount(5);
+});
+
+it('groups batched hasMany by the cased foreign key in the response', function () {
+    Rest::fake(['comments' => Rest::response([['id' => 10, 'post_id' => 1]])]);
+    $posts = eagerPosts([['id' => 1]]);
+
+    (new EagerLoader)->load($posts, ['batchedComments']);
+
+    expect($posts[0]->batchedComments)->toHaveCount(1);
 });

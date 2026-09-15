@@ -47,9 +47,9 @@ class Collection extends BaseCollection
      *
      * @param  string|array<int|string, string|Closure>  $relations
      */
-    public function load(string|array $relations): static
+    public function load(string|array $relations, string ...$more): static
     {
-        (new EagerLoader)->load($this, is_string($relations) ? [$relations] : $relations);
+        (new EagerLoader)->load($this, array_merge(is_string($relations) ? [$relations] : $relations, $more));
 
         return $this;
     }

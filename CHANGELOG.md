@@ -26,6 +26,9 @@ project adheres to [Semantic Versioning](https://semver.org/).
   the `in` operator.
 - **`Rest::fake()`** matches patterns against the path of URIs that carry a
   query string; `RecordedRequest::query()` holds the parsed values.
+- **`Relation` base class** gains `batch()` and `eagerLoad()`; custom relation
+  subclasses declaring members with those names must match the new
+  signatures.
 
 ## 1.5.0
 

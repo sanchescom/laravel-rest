@@ -139,7 +139,17 @@ class HasMany extends Relation
         $groups = [];
 
         foreach ($result instanceof Collection ? $result : [$result] as $model) {
-            $groups[(string) $model->getAttribute($foreignKey)][] = $model;
+            // The query sends the relation's camelCase name through the grammar, but the
+            // response may carry it as-is, snake_cased, or camelCased — read whichever is there.
+            $key = $model->getAttribute($foreignKey)
+                ?? $model->getAttribute(Str::snake($foreignKey))
+                ?? $model->getAttribute(Str::camel($foreignKey));
+
+            if ($key === null) {
+                continue;
+            }
+
+            $groups[(string) $key][] = $model;
         }
 
         return $groups;

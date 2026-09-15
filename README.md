@@ -300,6 +300,7 @@ Post::withQuery(['include' => 'author'])->get();
 
 // Membership filter — ?status=draft,review (rendered per grammar)
 Post::whereIn('status', ['draft', 'review'])->get();
+// whereIn('status', []) sends an empty filter (status=) — guard empty lists yourself
 
 // Convenience
 Post::where('status', 'draft')->first(); // first item of the collection
@@ -985,6 +986,11 @@ public function author(): BelongsTo
 - `limit()` or `page()` inside a batched constraint limit the whole batch, not
   each parent.
 - Nested URL relations (`nested()`) cannot be batched.
+- Batched loading groups by the foreign key (hasMany/hasOne) or primary key
+  (belongsTo) found in each response item, so those fields must be present in
+  the API response.
+- In concurrent mode a missing belongsTo target (404) aborts the whole load,
+  as lazy access would; batched mode leaves it null.
 
 ## Authentication
 
