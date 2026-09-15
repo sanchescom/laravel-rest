@@ -12,6 +12,8 @@ use Psr\SimpleCache\CacheInterface;
 use Sanchescom\Rest\Cache\CacheKeys;
 use Sanchescom\Rest\Contracts\ClientInterface;
 use Sanchescom\Rest\Contracts\ClientResolverInterface;
+use Sanchescom\Rest\Contracts\PaginationConfigResolver;
+use Sanchescom\Rest\Pagination\PaginationConfig;
 use Sanchescom\Rest\Query\ConfigurableGrammar;
 use Sanchescom\Rest\Query\PlainGrammar;
 
@@ -63,6 +65,9 @@ class Model implements Arrayable, ArrayAccess, JsonSerializable
 
     /** @var class-string|null */
     protected ?string $grammar = null;
+
+    /** @var array<string, mixed>|string|null */
+    protected array|string|null $pagination = null;
 
     /** @var array<string, mixed> */
     protected array $options = [];
@@ -355,6 +360,17 @@ class Model implements Arrayable, ArrayAccess, JsonSerializable
     public function getRequestDataKey(): ?string
     {
         return $this->requestDataKey;
+    }
+
+    public function getPaginationConfig(): ?PaginationConfig
+    {
+        $config = $this->pagination;
+
+        if ($config === null && static::$resolver instanceof PaginationConfigResolver) {
+            $config = static::$resolver->paginationConfig($this->client);
+        }
+
+        return $config === null ? null : PaginationConfig::fromConfig($config);
     }
 
     public function newBuilder(): Builder

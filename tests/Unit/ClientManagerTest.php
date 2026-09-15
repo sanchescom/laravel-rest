@@ -68,3 +68,13 @@ it('standalone resolver stores and resolves clients', function () {
         ->and($resolver->hasClient('main'))->toBeTrue()
         ->and($resolver->hasClient('nope'))->toBeFalse();
 });
+
+it('reads pagination config from client config', function () use ($mainConfig) {
+    $manager = makeManager([
+        'main' => $mainConfig + ['pagination' => 'laravel'],
+        'other' => $mainConfig,
+    ]);
+
+    expect($manager->paginationConfig())->toBe('laravel')
+        ->and($manager->paginationConfig('other'))->toBeNull();
+});

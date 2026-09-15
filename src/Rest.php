@@ -12,6 +12,7 @@ use Sanchescom\Rest\Clients\FakeClient;
 use Sanchescom\Rest\Clients\RecordedRequest;
 use Sanchescom\Rest\Contracts\ClientInterface;
 use Sanchescom\Rest\Contracts\ClientResolverInterface;
+use Sanchescom\Rest\Contracts\PaginationConfigResolver;
 
 final class Rest
 {
@@ -35,9 +36,12 @@ final class Rest
 
         self::$fake = $fake;
 
-        Model::setClientResolver(new class($fake) implements ClientResolverInterface
+        Model::setClientResolver(new class($fake, self::$previous) implements ClientResolverInterface, PaginationConfigResolver
         {
-            public function __construct(private readonly FakeClient $fake) {}
+            public function __construct(
+                private readonly FakeClient $fake,
+                private readonly ?ClientResolverInterface $previous,
+            ) {}
 
             /**
              * @param  array<string, mixed>  $options
@@ -55,6 +59,13 @@ final class Rest
             public function queryConfig(?string $name = null): array|string|null
             {
                 return null;
+            }
+
+            public function paginationConfig(?string $name = null): array|string|null
+            {
+                return $this->previous instanceof PaginationConfigResolver
+                    ? $this->previous->paginationConfig($name)
+                    : null;
             }
         });
 

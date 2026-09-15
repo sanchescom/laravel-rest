@@ -9,8 +9,9 @@ use InvalidArgumentException;
 use Sanchescom\Rest\Clients\ClientFactory;
 use Sanchescom\Rest\Contracts\ClientInterface;
 use Sanchescom\Rest\Contracts\ClientResolverInterface;
+use Sanchescom\Rest\Contracts\PaginationConfigResolver;
 
-class ClientManager implements ClientResolverInterface
+class ClientManager implements ClientResolverInterface, PaginationConfigResolver
 {
     /** @var array<string, ClientInterface> */
     protected array $clients = [];
@@ -100,5 +101,14 @@ class ClientManager implements ClientResolverInterface
         $query = $this->config->get("rest.clients.{$name}.query");
 
         return is_array($query) || is_string($query) ? $query : null;
+    }
+
+    public function paginationConfig(?string $name = null): array|string|null
+    {
+        $name ??= $this->getDefaultClient();
+
+        $pagination = $this->config->get("rest.clients.{$name}.pagination");
+
+        return is_array($pagination) || is_string($pagination) ? $pagination : null;
     }
 }

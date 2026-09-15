@@ -7,8 +7,9 @@ namespace Sanchescom\Rest;
 use InvalidArgumentException;
 use Sanchescom\Rest\Contracts\ClientInterface;
 use Sanchescom\Rest\Contracts\ClientResolverInterface;
+use Sanchescom\Rest\Contracts\PaginationConfigResolver;
 
-class ClientResolver implements ClientResolverInterface
+class ClientResolver implements ClientResolverInterface, PaginationConfigResolver
 {
     protected ?string $default = null;
 
@@ -17,6 +18,9 @@ class ClientResolver implements ClientResolverInterface
 
     /** @var array<string, array<string, mixed>|string> */
     protected array $queryConfigs = [];
+
+    /** @var array<string, array<string, mixed>|string> */
+    protected array $paginationConfigs = [];
 
     /**
      * @param  array<string, ClientInterface>  $clients
@@ -73,5 +77,18 @@ class ClientResolver implements ClientResolverInterface
     public function queryConfig(?string $name = null): array|string|null
     {
         return $this->queryConfigs[$name ?? $this->default ?? ''] ?? null;
+    }
+
+    /**
+     * @param  array<string, mixed>|string  $config
+     */
+    public function setPaginationConfig(string $client, array|string $config): void
+    {
+        $this->paginationConfigs[$client] = $config;
+    }
+
+    public function paginationConfig(?string $name = null): array|string|null
+    {
+        return $this->paginationConfigs[$name ?? $this->default ?? ''] ?? null;
     }
 }
