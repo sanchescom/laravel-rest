@@ -8,6 +8,7 @@ use Closure;
 use GuzzleHttp\Psr7\Response;
 use PHPUnit\Framework\Assert;
 use Psr\Http\Message\ResponseInterface;
+use Sanchescom\Rest\Cache\Memo;
 use Sanchescom\Rest\Clients\FakeClient;
 use Sanchescom\Rest\Clients\RecordedRequest;
 use Sanchescom\Rest\Contracts\ClientInterface;
@@ -27,6 +28,8 @@ final class Rest
      */
     public static function fake(array $map): FakeClient
     {
+        Memo::flush();
+
         $fake = new FakeClient($map);
 
         if (self::$fake === null) {
@@ -81,6 +84,16 @@ final class Rest
         return new Response($status, $headers, is_string($body) ? $body : (json_encode($body) ?: '{}'));
     }
 
+    public static function memoize(bool $enabled = true): void
+    {
+        Memo::enable($enabled);
+    }
+
+    public static function flushMemo(): void
+    {
+        Memo::flush();
+    }
+
     public static function assertSent(Closure $callback): void
     {
         Assert::assertTrue(
@@ -116,6 +129,8 @@ final class Rest
 
     public static function restore(): void
     {
+        Memo::flush();
+
         if (self::$fake === null) {
             return;
         }

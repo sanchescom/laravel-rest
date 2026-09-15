@@ -12,6 +12,8 @@ use Illuminate\Support\LazyCollection;
 use InvalidArgumentException;
 use Psr\Http\Message\ResponseInterface;
 use Sanchescom\Rest\Cache\CachingClient;
+use Sanchescom\Rest\Cache\Memo;
+use Sanchescom\Rest\Cache\MemoizingClient;
 use Sanchescom\Rest\Contracts\ClientInterface;
 use Sanchescom\Rest\Exceptions\RestException;
 use Sanchescom\Rest\Pagination\PaginationConfig;
@@ -30,6 +32,8 @@ final class Builder
     private ?int $cacheTtlOverride = null;
 
     private bool $cacheDisabled = false;
+
+    private bool $memoDisabled = false;
 
     /** @var array<string, string> */
     private array $headers = [];
@@ -233,6 +237,9 @@ final class Builder
         if ($chunkSize < 1) {
             throw new InvalidArgumentException("Chunk size must be at least 1, [{$chunkSize}] given.");
         }
+
+        // ponytail: lazy walks can be huge; memoizing every page would pin them all in memory for the request.
+        $this->memoDisabled = true;
 
         return LazyCollection::make(function () use ($chunkSize) {
             $config = $this->model->getPaginationConfig() ?? new PaginationConfig;
@@ -455,27 +462,26 @@ final class Builder
 
         $client = $this->model->getClient($headers === [] ? [] : ['headers' => $headers]);
 
+        $keyExtra = $headers === [] ? null : md5(serialize($headers));
+
         $ttl = $this->cacheDisabled ? null : ($this->cacheTtlOverride ?? $this->model->getCacheTtl());
 
-        if ($ttl === null) {
+        if ($ttl !== null) {
+            $store = Model::getCacheStore();
+
+            if ($store === null) {
+                throw new RestException(
+                    'Caching requested but no cache store configured. Call Model::setCacheStore() or set rest.cache.'
+                );
+            }
+
+            $client = new CachingClient($client, $store, $this->model::class, $this->model->getClientName(), $ttl, $keyExtra);
+        }
+
+        if ($this->cacheDisabled || $this->memoDisabled || ! Memo::enabled()) {
             return $client;
         }
 
-        $store = Model::getCacheStore();
-
-        if ($store === null) {
-            throw new RestException(
-                'Caching requested but no cache store configured. Call Model::setCacheStore() or set rest.cache.'
-            );
-        }
-
-        return new CachingClient(
-            $client,
-            $store,
-            $this->model::class,
-            $this->model->getClientName(),
-            $ttl,
-            $headers === [] ? null : md5(serialize($headers)),
-        );
+        return new MemoizingClient($client, $this->model::class, $this->model->getClientName(), $keyExtra);
     }
 }

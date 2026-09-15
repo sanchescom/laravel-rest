@@ -13,6 +13,7 @@ use Illuminate\Support\Str;
 use JsonSerializable;
 use Psr\SimpleCache\CacheInterface;
 use Sanchescom\Rest\Cache\CacheKeys;
+use Sanchescom\Rest\Cache\Memo;
 use Sanchescom\Rest\Contracts\ClientInterface;
 use Sanchescom\Rest\Contracts\ClientResolverInterface;
 use Sanchescom\Rest\Contracts\PaginationConfigResolverInterface;
@@ -323,6 +324,8 @@ class Model implements Arrayable, ArrayAccess, JsonSerializable
 
     public static function flushCache(): void
     {
+        Memo::forget(static::class);
+
         $store = static::getCacheStore();
 
         if ($store === null) {
