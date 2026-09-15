@@ -10,6 +10,7 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\LazyCollection;
 use Illuminate\Support\Str;
+use InvalidArgumentException;
 use JsonSerializable;
 use Psr\SimpleCache\CacheInterface;
 use Sanchescom\Rest\Cache\CacheKeys;
@@ -211,6 +212,20 @@ class Model implements Arrayable, ArrayAccess, JsonSerializable
     public function belongsTo(string $related, ?string $foreignKey = null): Relations\BelongsTo
     {
         return new Relations\BelongsTo($this, $related, $foreignKey);
+    }
+
+    public function setRelation(string $name, mixed $value): void
+    {
+        $this->loadedRelations[$name] = $value;
+    }
+
+    public function relationFor(string $name): Relations\Relation
+    {
+        if (! $this->isRelationMethod($name)) {
+            throw new InvalidArgumentException(sprintf('Relation [%s] is not defined on [%s].', $name, static::class));
+        }
+
+        return $this->{$name}();
     }
 
     protected function isRelationMethod(string $key): bool
