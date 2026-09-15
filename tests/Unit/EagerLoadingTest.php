@@ -425,6 +425,7 @@ it('honours with inside a constraint in both loading modes', function (string $r
 
     $posts = EagerPost::with([$relation => fn (Builder $query) => $query->with('author')])->get();
 
+    Rest::assertSentCount($requests);
     expect($posts[0]->{$relation}[0]->author->name)->toBe('Ann');
     Rest::assertSentCount($requests);
 })->with([
