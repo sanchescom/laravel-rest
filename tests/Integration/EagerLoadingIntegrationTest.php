@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use GuzzleHttp\HandlerStack;
+use GuzzleHttp\Middleware;
 use Sanchescom\Rest\ClientResolver;
 use Sanchescom\Rest\Clients\GuzzleClient;
 use Sanchescom\Rest\Model;
@@ -10,6 +12,24 @@ use Sanchescom\Rest\Relations\HasMany;
 use Sanchescom\Rest\Tests\Support\FixtureServer;
 
 beforeAll(fn () => FixtureServer::start());
+
+/**
+ * @param  array<int, array<string, mixed>>  $history
+ */
+function httpEagerResolver(array &$history): void
+{
+    $stack = HandlerStack::create();
+    $stack->push(Middleware::history($history));
+
+    $resolver = new ClientResolver([
+        'fixture' => GuzzleClient::fromConfig([
+            'base_uri' => FixtureServer::$baseUri,
+            'options' => ['handler' => $stack],
+        ]),
+    ]);
+    $resolver->setDefaultClient('fixture');
+    Model::setClientResolver($resolver);
+}
 
 class HttpEagerPost extends Model
 {
@@ -57,15 +77,10 @@ class HttpEagerUser extends Model
     protected ?string $dataKey = null;
 }
 
-beforeEach(function () {
-    $resolver = new ClientResolver([
-        'fixture' => GuzzleClient::fromConfig(['base_uri' => FixtureServer::$baseUri]),
-    ]);
-    $resolver->setDefaultClient('fixture');
-    Model::setClientResolver($resolver);
-});
+it('eager loads nested relations concurrently and batched over real http', function (string $comments, string $author, int $expectedRequests) {
+    $history = [];
+    httpEagerResolver($history);
 
-it('eager loads nested relations concurrently and batched over real http', function (string $comments, string $author) {
     $posts = (new HttpEagerPost)->newCollection([
         new HttpEagerPost(['id' => 1, 'userId' => 7]),
         new HttpEagerPost(['id' => 2, 'userId' => 8]),
@@ -73,11 +88,13 @@ it('eager loads nested relations concurrently and batched over real http', funct
 
     $posts->load(["{$comments}.author", $author]);
 
-    expect($posts[0]->{$comments}->pluck('id')->all())->toBe([10, 11])
+    expect($history)->toHaveCount($expectedRequests)
+        ->and($posts[0]->{$comments}->pluck('id')->all())->toBe([10, 11])
         ->and($posts[1]->{$comments}->pluck('id')->all())->toBe([12])
         ->and($posts[0]->{$comments}[1]->author->name)->toBe('User 8')
-        ->and($posts[1]->{$author}->name)->toBe('User 8');
+        ->and($posts[1]->{$author}->name)->toBe('User 8')
+        ->and($history)->toHaveCount($expectedRequests);
 })->with([
-    'concurrent' => ['comments', 'author'],
-    'batched' => ['batchedComments', 'batchedAuthor'],
+    'concurrent' => ['comments', 'author', 5],
+    'batched' => ['batchedComments', 'batchedAuthor', 3],
 ])->group('integration');
