@@ -66,3 +66,49 @@ it('keeps multi-line and long reasons on one list line', function () {
     $reasonPart = mb_substr($retryLine, $reasonStart + 2, null, 'UTF-8');
     expect($reasonPart)->toBe(str_repeat('x', 300).'…');
 });
+
+it('lists scenarios declared in the catalog but missing from results as not run', function () {
+    $apis = [
+        'alpha' => [
+            'name' => 'Alpha',
+            'base_uri' => 'https://alpha.test/',
+            'traits' => [],
+            'scenarios' => ['list' => ['probe' => 'list'], 'sort' => ['probe' => 'sort']],
+        ],
+        'beta' => [
+            'name' => 'Beta',
+            'base_uri' => 'https://beta.test/',
+            'traits' => [],
+            'scenarios' => ['list' => ['probe' => 'list']],
+        ],
+    ];
+
+    $results = [
+        'alpha|list' => liveReportRow('alpha', 'list', ['read.list'], 'pass'),
+        'beta|list' => liveReportRow('beta', 'list', ['read.list'], 'pass'),
+    ];
+
+    $markdown = LiveReport::render($apis, $results, '1.0.0', '2026-09-15 10:00 UTC');
+
+    expect($markdown)
+        ->toContain('1 not run')
+        ->toContain('## Not run')
+        ->toContain('- **Alpha › sort** — no result recorded');
+});
+
+it('reports none not run when every declared scenario has a result', function () {
+    $apis = [
+        'alpha' => ['name' => 'Alpha', 'base_uri' => 'https://alpha.test/', 'traits' => [], 'scenarios' => ['list' => ['probe' => 'list']]],
+    ];
+
+    $results = ['alpha|list' => liveReportRow('alpha', 'list', ['read.list'], 'pass')];
+
+    $markdown = LiveReport::render($apis, $results, '1.0.0', '2026-09-15 10:00 UTC');
+
+    expect($markdown)->toContain('0 not run');
+
+    $lines = explode("\n", $markdown);
+    $section = array_slice($lines, array_search('## Not run', $lines) + 1);
+
+    expect(trim($section[1] ?? ''))->toBe('_None._');
+});

@@ -33,6 +33,16 @@ final class LiveReport
             }
         }
 
+        $notRun = [];
+
+        foreach ($apis as $slug => $api) {
+            foreach (array_keys($api['scenarios'] ?? []) as $scenario) {
+                if (! isset($results["{$slug}|{$scenario}"])) {
+                    $notRun[] = ['slug' => $slug, 'scenario' => $scenario];
+                }
+            }
+        }
+
         $name = fn (string $slug) => $apis[$slug]['name'] ?? $slug;
         $names = fn (array $slugs) => implode(', ', array_map($name, array_keys($slugs)));
 
@@ -42,13 +52,14 @@ final class LiveReport
             "Generated {$generatedAt} from `{$version}` by `composer live:catalog && composer live:report`. Do not edit by hand.",
             '',
             sprintf(
-                '%d APIs, %d scenarios: ✅ %d passed · ❌ %d failed · ⏭ %d skipped (API unavailable) · 🚫 %d unsupported.',
+                '%d APIs, %d scenarios: ✅ %d passed · ❌ %d failed · ⏭ %d skipped (API unavailable) · 🚫 %d unsupported · ⬜ %d not run.',
                 count($apis),
-                count($results),
+                count($results) + count($notRun),
                 $totals[LiveResults::PASS],
                 $totals[LiveResults::FAIL],
                 $totals[LiveResults::SKIP],
                 $totals[LiveResults::UNSUPPORTED],
+                count($notRun),
             ),
             '',
             '## Feature coverage',
@@ -110,6 +121,16 @@ final class LiveReport
             foreach ($rows as $row) {
                 $lines[] = sprintf('- **%s › %s** — %s', $name($row['slug']), $row['scenario'], self::normalizeReason($row['reason']));
             }
+        }
+
+        $lines = [...$lines, '', '## Not run', ''];
+
+        if ($notRun === []) {
+            $lines[] = '_None._';
+        }
+
+        foreach ($notRun as $row) {
+            $lines[] = sprintf('- **%s › %s** — %s', $name($row['slug']), $row['scenario'], 'no result recorded');
         }
 
         return implode("\n", $lines)."\n";
