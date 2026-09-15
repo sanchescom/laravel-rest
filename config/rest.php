@@ -43,6 +43,20 @@ return [
         'ttl' => 300,
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Request Memoization
+    |--------------------------------------------------------------------------
+    |
+    | When enabled, identical GET requests made during one application request
+    | (or one queue job) hit the API once; every call still returns fresh model
+    | instances. Writes forget the written model's entries. Keep it off for
+    | long-running commands that poll the API for changes.
+    |
+    */
+
+    'memoize' => (bool) env('REST_MEMOIZE', false),
+
     'clients' => [
         'localhost' => [
             'provider' => 'guzzle',

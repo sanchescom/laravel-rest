@@ -30,8 +30,17 @@ class RestServiceProvider extends ServiceProvider
 
         Model::setClientResolver($this->app->make(ClientResolverInterface::class));
 
+        Rest::memoize((bool) $this->app['config']->get('rest.memoize', false));
+
         if ($this->app->bound('events')) {
-            Model::setEventDispatcher($this->app->make('events'));
+            $events = $this->app->make('events');
+
+            Model::setEventDispatcher($events);
+
+            // Class-name strings: neither Octane nor the queue component is a dependency.
+            foreach (['Laravel\Octane\Events\RequestReceived', 'Illuminate\Queue\Events\JobProcessing'] as $event) {
+                $events->listen($event, static fn () => Rest::flushMemo());
+            }
         }
 
         $cache = $this->app['config']->get('rest.cache');
