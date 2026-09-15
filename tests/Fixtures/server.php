@@ -38,6 +38,18 @@ switch (true) {
         echo json_encode(['data' => [['id' => 1], ['id' => 2]]]);
         break;
 
+    case $path === 'paged/items' && $method === 'GET':
+        $page = max(1, (int) ($_GET['page'] ?? 1));
+        $limit = max(1, (int) ($_GET['limit'] ?? 2));
+        $all = array_map(fn (int $id) => ['id' => $id], range(1, 5));
+        $hasNext = $page * $limit < count($all);
+        echo json_encode([
+            'data' => array_slice($all, ($page - 1) * $limit, $limit),
+            'meta' => ['total' => count($all)],
+            'links' => ['next' => $hasNext ? 'paged/items?page='.($page + 1) : null],
+        ]);
+        break;
+
     case $path === 'echo':
         echo json_encode(['query' => $_GET, 'headers' => requestHeaders(), 'method' => $method, 'body' => jsonBody()]);
         break;
