@@ -859,16 +859,21 @@ foreach ($comments as $comment) {
 - Successful responses are remembered by client, model, URI, query and
   headers; every call still returns new model instances.
 - A successful `post()` / `put()` / `delete()` forgets the written model's
-  entries; `Model::flushCache()` and `Rest::flushMemo()` clear them manually.
+  entries; `Post::flushCache()` and `Rest::flushMemo()` clear them manually.
+- Invalidation is per model class: other classes — including ones sharing
+  the same endpoint — keep their entries. Call `Rest::flushMemo()` after
+  writes with server-side side effects or writes made through a raw client.
 - `withoutCache()` skips memoization too, and `lazy()` never memoizes.
 - A memo hit is served before the response cache, so the cache store is not
   touched.
-- The service provider resets memoization when an Octane request starts and
-  before each queue job. In FPM it lives for one request anyway.
+- The service provider resets memoization when an Octane request, task or
+  tick starts and before each queue job. In FPM it lives for one request
+  anyway.
 
 > [!WARNING]
 > Keep it off (or call `Rest::flushMemo()`) in long-running Artisan commands
 > that poll an API for changes — they are one "request" for their whole run.
+> They also keep every memoized response in memory until they finish.
 
 ### Testing with fakes
 

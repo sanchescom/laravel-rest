@@ -38,7 +38,12 @@ class RestServiceProvider extends ServiceProvider
             Model::setEventDispatcher($events);
 
             // Class-name strings: neither Octane nor the queue component is a dependency.
-            foreach (['Laravel\Octane\Events\RequestReceived', 'Illuminate\Queue\Events\JobProcessing'] as $event) {
+            foreach ([
+                'Laravel\Octane\Events\RequestReceived',
+                'Illuminate\Queue\Events\JobProcessing',
+                'Laravel\Octane\Events\TaskReceived',
+                'Laravel\Octane\Events\TickReceived',
+            ] as $event) {
                 $events->listen($event, static fn () => Rest::flushMemo());
             }
         }

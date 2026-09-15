@@ -290,8 +290,8 @@ final class Builder
         $payload = $this->decode($this->client()->post($this->uri(), $this->envelope($model->getAttributes())));
 
         $created = $this->model->newInstance($this->extract($payload));
-        $created->fireModelEvent('created');
         ($this->model)::flushCache();
+        $created->fireModelEvent('created');
 
         return $created;
     }
@@ -316,8 +316,8 @@ final class Builder
         $payload = $this->decode($this->client()->put($this->uri($id), $this->envelope($model->getAttributes())));
 
         $updated = $this->model->newInstance($this->extract($payload));
-        $updated->fireModelEvent('updated');
         ($this->model)::flushCache();
+        $updated->fireModelEvent('updated');
 
         return $updated;
     }
@@ -336,8 +336,8 @@ final class Builder
 
         $this->client()->delete($this->uri($id));
 
-        $this->model->fireModelEvent('deleted');
         ($this->model)::flushCache();
+        $this->model->fireModelEvent('deleted');
 
         return true;
     }

@@ -103,13 +103,27 @@ it('toggles the enabled flag and flushes when disabled', function () {
     expect(Memo::enabled())->toBeFalse();
 
     Memo::enable();
-    Memo::put('App\Post', 'k', 200, '{}');
+    Memo::put('App\Post', 'k', 200, '{}', []);
 
     expect(Memo::enabled())->toBeTrue()
-        ->and(Memo::get('App\Post', 'k'))->toBe(['status' => 200, 'body' => '{}']);
+        ->and(Memo::get('App\Post', 'k'))->toBe(['status' => 200, 'headers' => [], 'body' => '{}']);
 
     Memo::enable(false);
 
     expect(Memo::enabled())->toBeFalse()
         ->and(Memo::get('App\Post', 'k'))->toBeNull();
+});
+
+it('keeps response headers on memo hits', function () {
+    $inner = Mockery::mock(ClientInterface::class);
+    $inner->shouldReceive('get')->once()->andReturn(
+        new Response(200, ['Link' => '<https://api.test/posts?page=2>; rel="next"'], '[]'),
+    );
+
+    $client = new MemoizingClient($inner, 'App\Post', 'main');
+
+    $client->get('posts');
+    $response = $client->get('posts');
+
+    expect($response->getHeaderLine('Link'))->toBe('<https://api.test/posts?page=2>; rel="next"');
 });

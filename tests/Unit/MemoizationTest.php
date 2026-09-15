@@ -161,7 +161,7 @@ it('flushes memo when faking again', function () {
 });
 
 it('flushes memo on restore', function () {
-    Memo::put(MemoPost::class, 'key', 200, '{}');
+    Memo::put(MemoPost::class, 'key', 200, '{}', []);
 
     Rest::restore();
 
@@ -177,4 +177,17 @@ it('flushes everything with flushMemo', function () {
     MemoPost::get(1);
 
     Rest::assertSentCount(2);
+});
+
+it('lets write listeners read fresh data', function () {
+    Rest::memoize();
+    Rest::fake(['memo_posts/*' => Rest::response(['id' => 1])]);
+
+    MemoPost::get(1);
+    MemoPost::updated(fn () => MemoPost::get(1));
+    MemoPost::put(1, ['title' => 'changed']);
+
+    Rest::assertSentCount(3);
+
+    MemoPost::flushEventListeners();
 });

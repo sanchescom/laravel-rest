@@ -33,7 +33,7 @@ it('flushes memo on request and job lifecycle events', function (string $event) 
     app()->instance('events', new Dispatcher(app()));
     app()->register(RestServiceProvider::class, true);
 
-    Memo::put('App\Post', 'key', 200, '{}');
+    Memo::put('App\Post', 'key', 200, '{}', []);
 
     event($event);
 
@@ -41,4 +41,16 @@ it('flushes memo on request and job lifecycle events', function (string $event) 
 })->with([
     'octane request' => ['Laravel\Octane\Events\RequestReceived'],
     'queue job' => ['Illuminate\Queue\Events\JobProcessing'],
+    'octane task' => ['Laravel\Octane\Events\TaskReceived'],
+    'octane tick' => ['Laravel\Octane\Events\TickReceived'],
 ]);
+
+it('starts with an empty memo on every boot', function () {
+    config()->set('rest.memoize', true);
+    Memo::put('App\Post', 'key', 200, '{}', []);
+
+    app()->register(RestServiceProvider::class, true);
+
+    expect(Memo::get('App\Post', 'key'))->toBeNull()
+        ->and(Memo::enabled())->toBeTrue();
+});

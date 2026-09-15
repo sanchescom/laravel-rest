@@ -12,16 +12,14 @@ final class Memo
 {
     private static bool $enabled = false;
 
-    /** @var array<string, array<string, array{status: int, body: string}>> */
+    /** @var array<string, array<string, array{status: int, headers: array<string, list<string>>, body: string}>> */
     private static array $entries = [];
 
     public static function enable(bool $enabled = true): void
     {
         self::$enabled = $enabled;
 
-        if (! $enabled) {
-            self::flush();
-        }
+        self::flush();
     }
 
     public static function enabled(): bool
@@ -30,16 +28,19 @@ final class Memo
     }
 
     /**
-     * @return array{status: int, body: string}|null
+     * @return array{status: int, headers: array<string, list<string>>, body: string}|null
      */
     public static function get(string $modelClass, string $key): ?array
     {
         return self::$entries[$modelClass][$key] ?? null;
     }
 
-    public static function put(string $modelClass, string $key, int $status, string $body): void
+    /**
+     * @param  array<string, list<string>>  $headers
+     */
+    public static function put(string $modelClass, string $key, int $status, string $body, array $headers): void
     {
-        self::$entries[$modelClass][$key] = ['status' => $status, 'body' => $body];
+        self::$entries[$modelClass][$key] = ['status' => $status, 'headers' => $headers, 'body' => $body];
     }
 
     public static function forget(string $modelClass): void

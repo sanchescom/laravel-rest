@@ -100,7 +100,7 @@ final class MemoizingClient implements ClientInterface
     {
         $entry = Memo::get($this->modelClass, $key);
 
-        return $entry === null ? null : new Response($entry['status'], [], $entry['body']);
+        return $entry === null ? null : new Response($entry['status'], $entry['headers'], $entry['body']);
     }
 
     private function remember(string $key, ResponseInterface $response): ResponseInterface
@@ -109,14 +109,12 @@ final class MemoizingClient implements ClientInterface
             return $response;
         }
 
-        Memo::put($this->modelClass, $key, $response->getStatusCode(), (string) $response->getBody());
+        $status = $response->getStatusCode();
+        $headers = $response->getHeaders();
+        $body = (string) $response->getBody();
 
-        $body = $response->getBody();
+        Memo::put($this->modelClass, $key, $status, $body, $headers);
 
-        if ($body->isSeekable()) {
-            $body->rewind();
-        }
-
-        return $response;
+        return new Response($status, $headers, $body);
     }
 }
