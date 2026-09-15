@@ -74,7 +74,11 @@ Widening the set of APIs the package can talk to.
 - **Performance docs:** HTTP/2 and compression via client `options`
   (`'version' => 2.0`, `decode_content`); recipe for syncing REST models into
   Eloquent tables (`lazy()` + `upsert`), with a `rest:sync` command only if
-  real demand appears.
+  real demand appears; `defer()` for fire-and-forget writes (analytics, logs)
+  but never for regular create/update, which would lose validation errors and
+  created ids; connection reuse — keep-alive already works within one PHP
+  request, while reuse across FPM requests needs Octane (or PHP 8.5
+  persistent curl share handles).
 - **DX:** `php artisan make:rest-model User --client=crm` generator; more
   grammar presets (e.g. Spring, Stripe-style).
 - **CI:** nightly job for the `live` test group (currently run manually before
