@@ -9,11 +9,9 @@ release is indicative, not binding.
 
 The features you hit on day one of consuming a real API.
 
-- **Server-side pagination with metadata.** `paginateRemote(int $perPage)`
-  returning a real `LengthAwarePaginator` built from response metadata, with
-  configurable keys in the conventions style
-  (`'pagination' => ['total' => 'meta.total', 'last_page' => 'meta.last_page']`).
-  Cursor/Link-header pagination as a follow-up layer.
+- ~~**Server-side pagination with metadata.**~~ Done: `paginate()` /
+  `simplePaginate()` with `'pagination'` client config. Cursor/Link-header
+  pagination remains a follow-up layer.
 - **Eager loading.** `Post::with('comments')->get()` — collect parent keys,
   batch the relation via a single `whereIn` query when the API supports it,
   falling back to concurrent `getMany` by id; distribute onto instances.
@@ -68,6 +66,9 @@ Widening the set of APIs the package can talk to.
   builder chaining on `HasOne` (documented asymmetry with `HasMany`); dead
   branches in `Builder::first()/count()`; `getMany` recordings
   indistinguishable from `get` in fakes.
+  `Rest::fake()` ignores client `grammar`/`query` config, so faked requests
+  compile with `PlainGrammar` (fixing it changes query shapes seen by
+  `assertSent`).
 
 ## Ongoing (no release attached)
 

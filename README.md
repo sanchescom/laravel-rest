@@ -194,10 +194,51 @@ try {
 
 ## Pagination
 
-Collections can be paginated in memory:
+### Server-side
+
+`paginate()` requests one page and builds a `LengthAwarePaginator` from the
+response metadata; `simplePaginate()` returns a `Paginator` for APIs that do
+not report a total.
 
 ```php
-$paginator = User::get()->paginate(15); // Illuminate LengthAwarePaginator
+$posts = Post::where('status', 'active')->paginate(15);        // page from ?page=
+$posts = Post::orderBy('id')->simplePaginate(15, 'p', 3);      // explicit page name and page
+```
+
+Tell the client where the metadata lives — a preset or explicit dot paths:
+
+```php
+'clients' => [
+    'crm' => [
+        'base_uri'   => 'https://crm.example.com/api/',
+        'pagination' => 'laravel',   // total: meta.total, next: links.next
+        // 'pagination' => 'django',  // total: count,      next: next
+        // 'pagination' => 'jsonapi', //                    next: links.next
+        // 'pagination' => [
+        //     'preset'   => 'laravel',
+        //     'style'    => 'offset',          // 'page' (default) or 'offset'
+        //     'total'    => 'meta.count',
+        //     'has_more' => 'meta.has_more',   // alternative to 'next'
+        // ],
+    ],
+],
+```
+
+A model can override the client with `protected array|string|null $pagination`.
+Items are read through `$dataKey` as usual, and page parameter names follow the
+client's `query` conventions (e.g. `page[number]`, `page_size`).
+
+- `paginate()` requires a `total` path and throws `RestException` when it is
+  not configured or missing from the response.
+- `simplePaginate()` uses `next`, then `has_more` (strict `true`); with neither
+  configured it assumes more pages when a full page came back — an exactly-full
+  last page then shows one extra empty page.
+- Both replace any earlier `page()` / `limit()` / `offset()` on the query.
+
+### In memory
+
+```php
+$paginator = User::get()->paginate(15); // slices an already-fetched collection
 ```
 
 ## Query Builder

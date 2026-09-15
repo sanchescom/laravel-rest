@@ -7,7 +7,7 @@ What laravel-rest supports as of 1.3.0 — and what it deliberately does not.
 | Request bodies | JSON | form-encoded, multipart, XML (custom `ClientInterface`) |
 | Query filters | plain `?field=value`, JSON:API `filter[...]`, django `field__op=value`, `ConfigurableGrammar` (all three via `'query'` config), custom `Grammar` | GraphQL, OData `$filter` (custom `Grammar`) |
 | Sorting | 4 styles: `dash` (`-field`), `suffix` (`field:dir`), `separate` (two params), `array` (`sort[field]=dir`); renames via `names.sort`; casing via `casing` key; all configurable per client | — |
-| Pagination | query params: `limit/offset/page`; renamable/nestable via `names` (e.g. `'limit' => 'page.size'` → `page[size]`); JSON:API `page[size]/page[number]/page[offset]` via preset | Link-header, cursor tokens (use `withQuery()` manually) |
+| Pagination | `paginate()` (`LengthAwarePaginator` from a response total) and `simplePaginate()` (next link, has-more flag, or full-page inference); `page` or `offset` style; presets `laravel`, `django`, `jsonapi`; param names via `names` (e.g. `page[size]`) | Link-header, cursor tokens (use `withQuery()` manually) |
 | Auth | bearer, basic, arbitrary headers, custom `AuthInterface` | OAuth2 token acquisition/refresh (attach ready tokens only) |
 | Retry | status-based with exponential backoff and `Retry-After` (integer seconds) | HTTP-date form of `Retry-After` (workaround: exponential backoff), circuit breakers, jitter |
 | Errors | 404/422/5xx/4xx typed exceptions, JSON bodies; configurable errors key (`errors_key`, dot notation) | non-JSON error bodies are preserved as empty `body` |

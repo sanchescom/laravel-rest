@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/) and this
 project adheres to [Semantic Versioning](https://semver.org/).
 
+## 1.4.0 (unreleased)
+
+### Added
+
+- **Server-side pagination** — `Builder::paginate()` returns a
+  `LengthAwarePaginator` built from response metadata; `simplePaginate()`
+  returns a `Paginator` driven by a next link, a has-more flag, or full-page
+  inference. Configured per client via `'pagination'` (presets `laravel`,
+  `django`, `jsonapi`, or explicit `total` / `next` / `has_more` dot paths and
+  `style` `page`|`offset`), overridable with the model `$pagination` property.
+- **`PaginationConfigResolver`** — optional interface implemented by
+  `ClientManager`, `ClientResolver` and the `Rest::fake()` resolver (which
+  delegates to the previous resolver). `ClientResolverInterface` is unchanged.
+
 ## 1.3.1
 
 ### Fixed
