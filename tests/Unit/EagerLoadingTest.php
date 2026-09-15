@@ -200,3 +200,107 @@ it('loads nested belongsTo relations level by level', function () {
     expect($comments[1]->author->name)->toBe('Ann');
     Rest::assertSentCount(1);
 });
+
+it('loads hasMany concurrently with one request per parent', function () {
+    Rest::fake(['comments' => Rest::response([['id' => 10, 'postId' => 1]])]);
+    $posts = eagerPosts([['id' => 1], ['id' => 2]]);
+
+    (new EagerLoader)->load($posts, ['comments']);
+
+    expect($posts[0]->comments)->toHaveCount(1)
+        ->and($posts[1]->comments)->toHaveCount(1);
+    Rest::assertSentCount(2);
+    Rest::assertSent(fn ($request) => $request->uri() === 'comments' && $request->query() === ['postId' => '1']);
+    Rest::assertSent(fn ($request) => $request->uri() === 'comments' && $request->query() === ['postId' => '2']);
+});
+
+it('loads nested hasMany through parent urls', function () {
+    Rest::fake(['posts/*/comments' => Rest::response([['id' => 10]])]);
+    $posts = eagerPosts([['id' => 1], ['id' => 2]]);
+
+    (new EagerLoader)->load($posts, ['nestedComments']);
+
+    expect($posts[1]->nestedComments)->toHaveCount(1);
+    Rest::assertSent(fn ($request) => $request->uri() === 'posts/2/comments');
+});
+
+it('loads hasMany in one whereIn request and groups by foreign key', function () {
+    Rest::fake(['comments' => Rest::response([
+        ['id' => 10, 'postId' => 1],
+        ['id' => 11, 'postId' => '1'],
+        ['id' => 12, 'postId' => 2],
+    ])]);
+    $posts = eagerPosts([['id' => 1], ['id' => 2], ['id' => 3]]);
+
+    (new EagerLoader)->load($posts, ['batchedComments']);
+
+    expect($posts[0]->batchedComments->pluck('id')->all())->toBe([10, 11])
+        ->and($posts[1]->batchedComments->pluck('id')->all())->toBe([12])
+        ->and($posts[2]->batchedComments)->toHaveCount(0);
+    Rest::assertSentCount(1);
+    Rest::assertSent(fn ($request) => $request->query() === ['postId' => '1,2,3']);
+});
+
+it('applies constraints to each concurrent request and to the batch', function () {
+    Rest::fake(['comments' => Rest::response([])]);
+    $posts = eagerPosts([['id' => 1], ['id' => 2]]);
+    $constraint = fn (Builder $query) => $query->orderBy('id', 'desc');
+
+    (new EagerLoader)->load($posts, ['comments' => $constraint, 'batchedComments' => $constraint]);
+
+    Rest::assertSent(fn ($request) => $request->query() === ['postId' => '2', 'sort' => '-id']);
+    Rest::assertSent(fn ($request) => $request->query() === ['postId' => '1,2', 'sort' => '-id']);
+    Rest::assertSentCount(3);
+});
+
+it('loads hasOne as the first of each group in both modes', function () {
+    Rest::fake(['comments' => Rest::response([['id' => 10, 'postId' => 1], ['id' => 11, 'postId' => 1]])]);
+    $posts = eagerPosts([['id' => 1], ['id' => 2]]);
+
+    (new EagerLoader)->load($posts, ['batchedLatestComment']);
+
+    expect($posts[0]->batchedLatestComment->id)->toBe(10)
+        ->and($posts[1]->batchedLatestComment)->toBeNull();
+
+    Rest::restore();
+    Rest::fake(['comments' => Rest::response([['id' => 20, 'postId' => 1]])]);
+    $posts = eagerPosts([['id' => 1]]);
+
+    (new EagerLoader)->load($posts, ['latestComment']);
+
+    expect($posts[0]->latestComment->id)->toBe(20);
+});
+
+it('gives keyless parents an empty hasMany without requests', function () {
+    Rest::fake([]);
+    $posts = eagerPosts([['title' => 'draft']]);
+
+    (new EagerLoader)->load($posts, ['comments', 'batchedComments', 'latestComment']);
+
+    expect($posts[0]->comments)->toHaveCount(0)
+        ->and($posts[0]->batchedComments)->toHaveCount(0)
+        ->and($posts[0]->latestComment)->toBeNull();
+    Rest::assertSentCount(0);
+});
+
+it('loads nested relations with one round per level', function () {
+    Rest::fake([
+        'comments' => Rest::response([['id' => 10, 'postId' => 1, 'userId' => 7], ['id' => 11, 'postId' => 2, 'userId' => 8]]),
+        'users' => Rest::response([['id' => 7, 'name' => 'Ann'], ['id' => 8, 'name' => 'Bob']]),
+        'users/*' => Rest::response(['id' => 7, 'name' => 'Ann']),
+    ]);
+    $posts = eagerPosts([['id' => 1], ['id' => 2]]);
+
+    (new EagerLoader)->load($posts, ['batchedComments.author']);
+
+    expect($posts[0]->batchedComments[0]->author->name)->toBe('Ann');
+    Rest::assertSentCount(3);
+});
+
+it('refuses to batch a nested relation', function (Closure $define) {
+    $define(new EagerPost(['id' => 1]));
+})->with([
+    'batch then nested' => [fn (EagerPost $post) => $post->hasMany(EagerComment::class)->batch()->nested()],
+    'nested then batch' => [fn (EagerPost $post) => $post->hasMany(EagerComment::class)->nested()->batch()],
+    'has one' => [fn (EagerPost $post) => $post->hasOne(EagerComment::class)->nested()->batch()],
+])->throws(InvalidArgumentException::class, 'Nested relations cannot be batched.');
