@@ -21,6 +21,37 @@ in 1.4.0, lazy iteration and request memoization in 1.5.0, eager loading in
   responses for consecutive matching requests; needed to test retry and
   polling flows.
 
+### Real-world API shapes (found by live verification)
+
+Limitations reproduced on several structurally different public APIs during
+the live verification program (`docs/live-verification.md`):
+
+- **Pagination metadata in headers.** Totals in `X-Total-Count` /
+  `X-WP-Total` and next links in `Link` (json-server, Câmara dos Deputados,
+  WordPress, GitHub): let `'pagination'` paths address response headers, e.g.
+  `'total' => 'header:X-Total-Count'`, `'next' => 'header:Link#next'`.
+- **Repeated query params.** OR / membership filters as `id=1&id=2`
+  (json-server, GBIF, OpenF1) and unindexed `ids[]=a&ids[]=b` (crates.io):
+  add `'in' => 'repeat' | 'brackets'` styles, which need query building
+  without PHP's indexed `http_build_query`.
+- **Configurable batch filter name.** `batch()` filters with the key's own
+  name, but real APIs use a different parameter (`ids` for `id`, `by_ids`,
+  `uuids`): `->batch('ids')`.
+- **Space-separated sort direction.** `$order=date DESC` / `sort=field desc`
+  (Socrata, OData, CKAN): a `'sort' => 'space'` style.
+- **Errors in 200 responses.** Not-found and failures reported as HTTP 200
+  with an error body or an empty payload (Fake Store, World Bank, Disney,
+  icanhazdadjoke): an opt-in error detector per client (path + value, or
+  "empty body means not found").
+- **Detail path templates.** `Products(1)` (OData), `item/{id}.json`
+  (Hacker News, Open Library), `package_show?id=` (CKAN): a per-model detail
+  path template instead of the fixed `{endpoint}/{id}`.
+- **One-based offsets.** `offset` must start at 1 (USGS): an `'offset_base'`
+  pagination option.
+- **Standalone `ClientResolver` ignores request options.** `withHeaders()`
+  and model `$headers` / `$options` do nothing outside Laravel's
+  `ClientManager`: make the standalone resolver options-aware.
+
 ## 1.8 — Transport and Integrations
 
 Widening the set of APIs the package can talk to.
@@ -73,8 +104,9 @@ Widening the set of APIs the package can talk to.
   persistent curl share handles).
 - **DX:** `php artisan make:rest-model User --client=crm` generator; more
   grammar presets (e.g. Spring, Stripe-style).
-- **CI:** nightly job for the `live` test group (currently run manually before
-  releases).
+- **CI:** nightly job for the live verification catalog
+  (`composer live:catalog`), uploading the report as an artifact; currently
+  run manually.
 - **Visibility:** GitHub topics, richer package description, optionally a docs
   site generated from the markdown in `docs/`.
 
