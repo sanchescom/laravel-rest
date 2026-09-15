@@ -117,11 +117,21 @@ switch (true) {
         break;
 
     case $path === 'comments' && $method === 'GET':
-        $all = [['id' => 10, 'postId' => 1], ['id' => 11, 'postId' => 1], ['id' => 12, 'postId' => 2]];
-        $filtered = isset($_GET['postId'])
-            ? array_values(array_filter($all, fn ($c) => $c['postId'] === (int) $_GET['postId']))
-            : $all;
+        $all = [
+            ['id' => 10, 'postId' => 1, 'userId' => 7],
+            ['id' => 11, 'postId' => 1, 'userId' => 8],
+            ['id' => 12, 'postId' => 2, 'userId' => 7],
+        ];
+        $postIds = isset($_GET['postId']) ? array_map('intval', explode(',', (string) $_GET['postId'])) : null;
+        $filtered = $postIds === null
+            ? $all
+            : array_values(array_filter($all, fn ($c) => in_array($c['postId'], $postIds, true)));
         echo json_encode($filtered);
+        break;
+
+    case $path === 'users' && $method === 'GET':
+        $ids = isset($_GET['id']) ? array_map('intval', explode(',', (string) $_GET['id'])) : [];
+        echo json_encode(array_map(fn (int $id) => ['id' => $id, 'name' => 'User '.$id], $ids));
         break;
 
     case preg_match('#^users/(\d+)$#', $path, $m) === 1 && $method === 'GET':
