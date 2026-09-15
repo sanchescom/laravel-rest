@@ -344,8 +344,8 @@ final class Builder
             return Arr::get($payload, $config->hasMore) === true;
         }
 
-        // ponytail: an exactly-full last page reports one extra empty page; configure 'next' or 'has_more' to avoid it.
-        return $count === $perPage;
+        // ponytail: full-page inference — an exactly-full last page shows one extra empty page, and a server capping page size below perPage stops after page one; configure 'next' or 'has_more' to avoid both.
+        return $count >= $perPage;
     }
 
     /**

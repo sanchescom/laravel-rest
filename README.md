@@ -215,7 +215,6 @@ Tell the client where the metadata lives — a preset or explicit dot paths:
         // 'pagination' => 'django',  // total: count,      next: next
         // 'pagination' => 'jsonapi', //                    next: links.next
         // 'pagination' => [
-        //     'preset'   => 'laravel',
         //     'style'    => 'offset',          // 'page' (default) or 'offset'
         //     'total'    => 'meta.count',
         //     'has_more' => 'meta.has_more',   // alternative to 'next'
@@ -230,10 +229,19 @@ client's `query` conventions (e.g. `page[number]`, `page_size`).
 
 - `paginate()` requires a `total` path and throws `RestException` when it is
   not configured or missing from the response.
-- `simplePaginate()` uses `next`, then `has_more` (strict `true`); with neither
-  configured it assumes more pages when a full page came back — an exactly-full
-  last page then shows one extra empty page.
+- `simplePaginate()` uses `next`, then `has_more` (strict `true`); `next` takes
+  precedence when both are configured, and an explicit `'next' => null` clears
+  a preset's `next` path so `has_more` applies. With neither configured it
+  assumes more pages when a full page came back — an exactly-full last page
+  then shows one extra empty page, and a server that caps the page size below
+  `perPage` stops reporting more pages after page one.
 - Both replace any earlier `page()` / `limit()` / `offset()` on the query.
+- Enveloped responses (the `laravel` and `django` presets) need the model's
+  `$dataKey` (e.g. `'data'`, `'results'`) to find the items; without it the
+  whole response body is hydrated as items.
+- Under `Rest::fake()` the pagination config is kept, but query conventions
+  are not, so faked requests send plain `page` / `limit` / `offset` names —
+  write `assertSent` expectations accordingly.
 
 ### In memory
 

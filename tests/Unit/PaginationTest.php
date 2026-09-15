@@ -229,3 +229,36 @@ it('uses the offset style for simple pagination', function () {
 
     expect(PagedPost::simplePaginate(5, 'page', 2)->currentPage())->toBe(2);
 });
+
+it('prefers the next link over the has-more flag', function () {
+    pagedClient(
+        ['limit' => 2, 'page' => 1],
+        ['data' => [], 'links' => ['next' => null], 'meta' => ['has_more' => true]],
+        ['next' => 'links.next', 'has_more' => 'meta.has_more'],
+    );
+
+    expect(PagedPost::simplePaginate(2, 'page', 1)->hasMorePages())->toBeFalse();
+});
+
+it('clears a preset next path with null', function () {
+    pagedClient(
+        ['limit' => 2, 'page' => 1],
+        ['data' => [], 'links' => ['next' => 'https://api.test/paged_posts?page=2'], 'meta' => ['has_more' => false]],
+        ['preset' => 'laravel', 'next' => null, 'has_more' => 'meta.has_more'],
+    );
+
+    expect(PagedPost::simplePaginate(2, 'page', 1)->hasMorePages())->toBeFalse();
+});
+
+it('reports more pages when the server returns more items than requested', function () {
+    pagedClient(
+        ['limit' => 3, 'page' => 1],
+        ['data' => array_map(fn (int $id) => ['id' => $id], range(1, 5))],
+        null,
+    );
+
+    $paginator = PagedPost::simplePaginate(3, 'page', 1);
+
+    expect($paginator->hasMorePages())->toBeTrue()
+        ->and($paginator->count())->toBe(3);
+});
