@@ -57,6 +57,14 @@ final class Builder
         return $this;
     }
 
+    /**
+     * @param  array<int, mixed>  $values
+     */
+    public function whereIn(string $field, array $values): self
+    {
+        return $this->where($field, 'in', array_values(array_unique($values, SORT_REGULAR)));
+    }
+
     public function orderBy(string $field, string $direction = 'asc'): self
     {
         $this->state->orders[] = ['field' => $field, 'direction' => $direction];

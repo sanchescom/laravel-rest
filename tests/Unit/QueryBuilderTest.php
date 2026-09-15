@@ -90,3 +90,23 @@ it('merges withQuery params', function () {
 
     QueryPost::withQuery(['include' => 'author'])->get();
 });
+
+it('sends whereIn as a deduplicated comma list', function () {
+    $client = Mockery::mock(ClientInterface::class);
+    $client->shouldReceive('get')
+        ->with('query_posts', ['status' => 'draft,review'])
+        ->once()->andReturn(new Response(200, [], '[]'));
+    queryResolver($client);
+
+    QueryPost::whereIn('status', ['draft', 'review', 'draft'])->get();
+});
+
+it('treats where with the in operator as whereIn', function () {
+    $client = Mockery::mock(ClientInterface::class);
+    $client->shouldReceive('get')
+        ->with('query_posts', ['id' => '1,2'])
+        ->once()->andReturn(new Response(200, [], '[]'));
+    queryResolver($client);
+
+    QueryPost::where('id', 'in', [1, 2])->get();
+});

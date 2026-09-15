@@ -63,3 +63,20 @@ it('compiles json:api filters, sort and paging', function () {
         'page' => ['size' => 10, 'number' => 2],
     ]);
 });
+
+it('compiles in filters as comma lists', function () {
+    $state = state(function (QueryState $s) {
+        $s->wheres = [['field' => 'postId', 'operator' => 'in', 'value' => [1, 2, 3]]];
+    });
+
+    expect((new PlainGrammar)->compile($state))->toBe(['postId' => '1,2,3'])
+        ->and((new JsonApiGrammar)->compile($state))->toBe(['filter' => ['postId' => '1,2,3']]);
+});
+
+it('passes non-array in values through', function () {
+    $state = state(function (QueryState $s) {
+        $s->wheres = [['field' => 'postId', 'operator' => 'in', 'value' => '1,2']];
+    });
+
+    expect((new PlainGrammar)->compile($state))->toBe(['postId' => '1,2']);
+});

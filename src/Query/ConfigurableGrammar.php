@@ -14,9 +14,11 @@ class ConfigurableGrammar implements Grammar
 
     private const FILTER_STYLES = ['plain', 'brackets', 'django'];
 
+    private const IN_STYLES = ['comma', 'array'];
+
     private const CASINGS = ['snake', 'camel'];
 
-    private const KEYS = ['names', 'sort', 'sort_names', 'sort_suffix', 'filters', 'casing'];
+    private const KEYS = ['names', 'sort', 'sort_names', 'sort_suffix', 'filters', 'casing', 'in'];
 
     private const PRESETS = [
         'jsonapi' => [
@@ -43,6 +45,8 @@ class ConfigurableGrammar implements Grammar
 
     private string $filterStyle;
 
+    private string $inStyle;
+
     private ?string $casing;
 
     /**
@@ -64,6 +68,7 @@ class ConfigurableGrammar implements Grammar
         );
         $this->sortSuffix = (string) ($config['sort_suffix'] ?? ':');
         $this->filterStyle = (string) ($config['filters'] ?? 'plain');
+        $this->inStyle = (string) ($config['in'] ?? 'comma');
         $this->casing = $config['casing'] ?? null;
 
         if (! in_array($this->sortStyle, self::SORT_STYLES, true)) {
@@ -72,6 +77,10 @@ class ConfigurableGrammar implements Grammar
 
         if (! in_array($this->filterStyle, self::FILTER_STYLES, true)) {
             throw new InvalidArgumentException("Unknown filter style [{$this->filterStyle}].");
+        }
+
+        if (! in_array($this->inStyle, self::IN_STYLES, true)) {
+            throw new InvalidArgumentException("Unknown in style [{$this->inStyle}].");
         }
 
         if ($this->casing !== null && ! in_array($this->casing, self::CASINGS, true)) {
@@ -109,6 +118,21 @@ class ConfigurableGrammar implements Grammar
 
         foreach ($state->wheres as $where) {
             $field = $this->cased($where['field']);
+
+            if ($where['operator'] === 'in') {
+                $value = $this->inStyle === 'comma' && is_array($where['value'])
+                    ? implode(',', $where['value'])
+                    : $where['value'];
+
+                match ($this->filterStyle) {
+                    'plain' => $query[$field] = $value,
+                    'brackets' => $query['filter'][$field] = $value,
+                    'django' => $query["{$field}__in"] = $value,
+                    default => null,
+                };
+
+                continue;
+            }
 
             match ($this->filterStyle) {
                 'plain' => $query[$where['operator'] === '=' ? $field : "{$field}[{$where['operator']}]"] = $where['value'],

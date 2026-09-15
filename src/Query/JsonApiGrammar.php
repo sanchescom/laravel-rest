@@ -14,6 +14,12 @@ class JsonApiGrammar implements Grammar
         $query = $state->extra;
 
         foreach ($state->wheres as $where) {
+            if ($where['operator'] === 'in') {
+                $query['filter'][$where['field']] = is_array($where['value']) ? implode(',', $where['value']) : $where['value'];
+
+                continue;
+            }
+
             if ($where['operator'] === '=') {
                 $query['filter'][$where['field']] = $where['value'];
             } else {

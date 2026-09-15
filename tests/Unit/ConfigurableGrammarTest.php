@@ -161,3 +161,28 @@ it('resolves query config from the standalone resolver', function () {
 
     ConvPost::orderBy('date', 'desc')->get();
 });
+
+it('compiles in filters per filter style', function (string $filters, array $expected) {
+    $state = convState(function (QueryState $s) {
+        $s->wheres = [['field' => 'postId', 'operator' => 'in', 'value' => [1, 2]]];
+    });
+
+    expect(ConfigurableGrammar::fromConfig(['filters' => $filters])->compile($state))->toBe($expected);
+})->with([
+    'plain' => ['plain', ['postId' => '1,2']],
+    'brackets' => ['brackets', ['filter' => ['postId' => '1,2']]],
+    'django' => ['django', ['postId__in' => '1,2']],
+]);
+
+it('keeps in values as arrays with the array in style', function () {
+    $state = convState(function (QueryState $s) {
+        $s->wheres = [['field' => 'post_id', 'operator' => 'in', 'value' => [1, 2]]];
+    });
+
+    expect(ConfigurableGrammar::fromConfig(['in' => 'array', 'casing' => 'snake'])->compile($state))
+        ->toBe(['post_id' => [1, 2]]);
+});
+
+it('rejects an unknown in style', function () {
+    ConfigurableGrammar::fromConfig(['in' => 'pipe']);
+})->throws(InvalidArgumentException::class, 'Unknown in style [pipe].');

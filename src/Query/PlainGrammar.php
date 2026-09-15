@@ -14,6 +14,12 @@ class PlainGrammar implements Grammar
         $query = $state->extra;
 
         foreach ($state->wheres as $where) {
+            if ($where['operator'] === 'in') {
+                $query[$where['field']] = is_array($where['value']) ? implode(',', $where['value']) : $where['value'];
+
+                continue;
+            }
+
             $key = $where['operator'] === '='
                 ? $where['field']
                 : "{$where['field']}[{$where['operator']}]";
