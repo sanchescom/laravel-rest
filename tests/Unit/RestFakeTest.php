@@ -61,3 +61,12 @@ it('restores the previous resolver', function () {
 
     expect(Model::getClientResolver())->toBe($before);
 });
+
+it('matches fake patterns on the path of uris carrying a query string', function () {
+    $fake = Rest::fake(['comments' => Rest::response([])]);
+
+    $fake->getMany(['comments?postId=1&sort=-id']);
+
+    Rest::assertSent(fn ($request) => $request->uri() === 'comments'
+        && $request->query() === ['postId' => '1', 'sort' => '-id']);
+});

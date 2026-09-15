@@ -70,6 +70,14 @@ final class FakeClient implements ClientInterface
      */
     private function respond(string $method, string $uri, array $query, array $data): ResponseInterface
     {
+        if (str_contains($uri, '?')) {
+            [$uri, $queryString] = explode('?', $uri, 2);
+            parse_str($queryString, $parsed);
+
+            /** @var array<int|string, array<mixed>|string> $parsed */
+            $query = array_merge($parsed, $query);
+        }
+
         $this->recorded[] = new RecordedRequest($method, $uri, $query, $data);
 
         foreach ($this->map as $pattern => $response) {

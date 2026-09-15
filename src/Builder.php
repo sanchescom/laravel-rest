@@ -156,11 +156,7 @@ final class Builder
     {
         $payload = $this->fetchPayload($id);
 
-        if ($id !== null) {
-            return $this->model->newInstance($this->extract($payload));
-        }
-
-        return $this->hydrate($this->extract($payload));
+        return $id !== null ? $this->hydrateOne($payload) : $this->hydrateMany($payload);
     }
 
     /**
@@ -178,6 +174,49 @@ final class Builder
         );
 
         return $this->hydrate($items);
+    }
+
+    /**
+     * Send several builders' queries concurrently through this builder's client.
+     *
+     * @internal
+     *
+     * @param  list<Builder>  $builders
+     * @return list<array<mixed>>
+     */
+    public function getEach(array $builders): array
+    {
+        if ($builders === []) {
+            return [];
+        }
+
+        $uris = array_map(fn (Builder $builder) => $builder->requestUri(), $builders);
+
+        return array_values(array_map(
+            fn (ResponseInterface $response) => $this->decode($response),
+            $this->client()->getMany($uris),
+        ));
+    }
+
+    /**
+     * @internal
+     *
+     * @param  array<mixed>  $payload
+     */
+    public function hydrateOne(array $payload): Model
+    {
+        return $this->model->newInstance($this->extract($payload));
+    }
+
+    /**
+     * @internal
+     *
+     * @param  array<mixed>  $payload
+     * @return Collection<int, Model>
+     */
+    public function hydrateMany(array $payload): Collection
+    {
+        return $this->hydrate($this->extract($payload));
     }
 
     /**
@@ -462,6 +501,13 @@ final class Builder
         $endpoint = $this->endpointOverride ?? $this->model->getEndpoint();
 
         return $id === null ? $endpoint : "{$endpoint}/{$id}";
+    }
+
+    private function requestUri(): string
+    {
+        $query = $this->grammar->compile($this->state);
+
+        return $query === [] ? $this->uri() : $this->uri().'?'.http_build_query($query, '', '&', PHP_QUERY_RFC3986);
     }
 
     private function client(): ClientInterface
