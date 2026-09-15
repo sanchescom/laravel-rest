@@ -5,15 +5,14 @@ Priorities are driven by three sources: the [capability matrix](docs/capabilitie
 and review findings parked across the 1.0–1.3 release cycles. Order within a
 release is indicative, not binding.
 
-## 1.6 — Complete Reads (continued)
+## 1.7 — Complete Reads (continued)
 
 The features you hit on day one of consuming a real API. Pagination shipped
-in 1.4.0, lazy iteration and request memoization in 1.5.0; the rest follows.
+in 1.4.0, lazy iteration and request memoization in 1.5.0, eager loading in
+1.6.0; the rest follows.
 
 - **Cursor / Link-header pagination.** `cursorPaginate()` as a follow-up
   layer on top of 1.4.0's `paginate()` / `simplePaginate()`.
-- ~~**Eager loading.**~~ Done: `with()` / `load()`, concurrent per parent or one
-  `whereIn` request with `batch()`.
 - **Explicit attribute mapping.** `protected array $attributeMap = ['createdAt' => 'created_at']`
   — dictionary-based bidirectional renaming (read hydration and write bodies),
   deliberately not automatic casing conversion (rejected in the 1.3 design:
@@ -22,7 +21,7 @@ in 1.4.0, lazy iteration and request memoization in 1.5.0; the rest follows.
   responses for consecutive matching requests; needed to test retry and
   polling flows.
 
-## 1.7 — Transport and Integrations
+## 1.8 — Transport and Integrations
 
 Widening the set of APIs the package can talk to.
 
@@ -89,3 +88,4 @@ Widening the set of APIs the package can talk to.
 | 1.3.0 | API conventions: configurable names/sorts/filters, presets, dynamic headers, error keys, PATCH, envelopes |
 | 1.4.0 | Server-side pagination: `paginate()` / `simplePaginate()` from response metadata, pagination presets |
 | 1.5.0 | `lazy()` page iteration, opt-in per-request memoization of GET responses |
+| 1.6.0 | Eager loading (`with()` / `load()`, concurrent or batched `whereIn`), `whereIn()` in all grammars |
