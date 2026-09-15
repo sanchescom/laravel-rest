@@ -75,8 +75,8 @@ return [
         'list posts' => ['probe' => 'list', 'model' => Post::class, 'min' => 100, 'fields' => ['id', 'userId', 'title']],
         'find post' => ['probe' => 'find', 'model' => Post::class, 'id' => 1, 'fields' => ['title']],
         'get many posts' => ['probe' => 'get-many', 'model' => Post::class, 'ids' => [1, 2, 3]],
-        'filter posts by user' => ['probe' => 'filter', 'model' => Post::class, 'field' => 'userId', 'value' => 1, 'min' => 10, 'features' => ['grammar.configurable']],
-        'sort posts by id desc' => ['probe' => 'sort', 'model' => Post::class, 'field' => 'id', 'direction' => 'desc', 'features' => ['grammar.configurable']],
+        'filter posts by user' => ['probe' => 'filter', 'model' => Post::class, 'field' => 'userId', 'value' => 1, 'min' => 10],
+        'sort posts by id desc' => ['probe' => 'sort', 'model' => Post::class, 'field' => 'id', 'direction' => 'desc'],
         'simple paginate posts' => ['probe' => 'simple-paginate', 'model' => Post::class, 'per_page' => 10, 'features' => ['paginate.style.page']],
         'lazy walk posts' => ['probe' => 'lazy', 'model' => Post::class, 'chunk' => 25, 'take' => 100],
         'paginate with total' => [

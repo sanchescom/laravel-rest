@@ -55,11 +55,19 @@ final class LiveCatalog
     /**
      * @return array<string, array{0: string, 1: string}>
      */
-    public static function scenarios(?string $directory = null): array
+    public static function scenarios(?string $directory = null, bool $filtered = true): array
     {
+        $only = $filtered
+            ? array_values(array_filter(array_map('trim', explode(',', (string) getenv('LIVE_ONLY')))))
+            : [];
+
         $cases = [];
 
         foreach (self::apis($directory) as $slug => $api) {
+            if ($only !== [] && ! in_array($slug, $only, true)) {
+                continue;
+            }
+
             foreach (array_keys($api['scenarios']) as $name) {
                 $cases["{$slug} › {$name}"] = [$slug, (string) $name];
             }

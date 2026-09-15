@@ -92,8 +92,30 @@ it('has a well-formed scenario definition', function (string $slug, string $scen
         expect(array_key_exists($feature, Probes::FEATURES))->toBeTrue("Unknown feature [{$feature}] declared by [{$slug} › {$scenario}].");
     }
 
+    foreach ($definition['features'] ?? [] as $feature) {
+        expect(str_starts_with((string) $feature, 'grammar.'))->toBeFalse("Scenario [{$slug} › {$scenario}] declares [{$feature}]: grammar features are derived; do not declare them.");
+    }
+
     if ($probeName === 'unsupported') {
         expect(trim((string) ($definition['reason'] ?? '')))->not->toBe('', "Unsupported scenario [{$slug} › {$scenario}] needs a non-empty [reason].");
         expect($definition['features'] ?? [])->not->toBe([], "Unsupported scenario [{$slug} › {$scenario}] needs at least one feature.");
+
+        if (isset($definition['attempt'])) {
+            $attempt = $definition['attempt'];
+            $attemptProbe = (string) ($attempt['probe'] ?? '');
+
+            expect(in_array($attemptProbe, Probes::names(), true))->toBeTrue("Unknown probe [{$attemptProbe}] in the [attempt] of [{$slug} › {$scenario}].");
+            expect($attemptProbe)->not->toBe('unsupported', "The [attempt] of [{$slug} › {$scenario}] must not itself be an [unsupported] probe.");
+
+            foreach (Probes::REQUIRED[$attemptProbe] ?? [] as $key) {
+                expect(array_key_exists($key, $attempt))->toBeTrue("The [attempt] of [{$slug} › {$scenario}] is missing required key [{$key}] for probe [{$attemptProbe}].");
+            }
+
+            if (isset($attempt['model'])) {
+                expect(class_exists($attempt['model']))->toBeTrue("Model [{$attempt['model']}] in the [attempt] of [{$slug} › {$scenario}] does not exist.");
+                expect($attempt['model'] === Model::class || is_subclass_of($attempt['model'], Model::class))
+                    ->toBeTrue("Model [{$attempt['model']}] in the [attempt] of [{$slug} › {$scenario}] must extend ".Model::class.'.');
+            }
+        }
     }
-})->with(LiveCatalog::scenarios());
+})->with(LiveCatalog::scenarios(filtered: false));

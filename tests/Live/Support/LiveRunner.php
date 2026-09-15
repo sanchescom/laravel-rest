@@ -25,6 +25,11 @@ final class LiveRunner
             $probe = Probes::for((string) $definition['probe']);
             $features = array_values(array_unique([...$probe->features($definition), ...($definition['features'] ?? [])]));
 
+            if (in_array($definition['probe'], Probes::PARAMETER_PROBES, true)) {
+                $clientConfig = array_replace_recursive($api['client'] ?? [], $definition['client'] ?? []);
+                $features = array_values(array_unique([...$features, ...Probes::grammarFeatures($clientConfig, $definition['model'] ?? null)]));
+            }
+
             $probe->run($context, $definition);
 
             LiveResults::record($slug, $scenario, $features, LiveResults::PASS, '', $context->requests());

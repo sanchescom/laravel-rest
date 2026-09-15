@@ -48,3 +48,19 @@ it('rejects catalog files without the required keys', function () {
 it('rejects unknown apis', function () {
     LiveCatalog::api('missing', liveCatalogDir([]));
 })->throws(InvalidArgumentException::class, 'Unknown live API [missing].');
+
+it('limits the dataset to LIVE_ONLY slugs unless unfiltered', function () {
+    $dir = liveCatalogDir([
+        'alpha' => "<?php return ['name' => 'Alpha', 'base_uri' => 'https://a/', 'scenarios' => ['list' => ['probe' => 'list']]];",
+        'beta' => "<?php return ['name' => 'Beta', 'base_uri' => 'https://b/', 'scenarios' => ['list' => ['probe' => 'list']]];",
+    ]);
+
+    putenv('LIVE_ONLY=beta, gamma');
+
+    try {
+        expect(array_keys(LiveCatalog::scenarios($dir)))->toBe(['beta › list'])
+            ->and(array_keys(LiveCatalog::scenarios($dir, filtered: false)))->toBe(['alpha › list', 'beta › list']);
+    } finally {
+        putenv('LIVE_ONLY');
+    }
+});

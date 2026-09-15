@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Sanchescom\Rest\Tests\Live\Probes;
 
 use InvalidArgumentException;
+use Sanchescom\Rest\Query\JsonApiGrammar;
+use Sanchescom\Rest\Query\PlainGrammar;
 
 final class Probes
 {
@@ -21,6 +23,7 @@ final class Probes
         'grammar.jsonapi' => 'JSON:API grammar',
         'grammar.django' => 'Django grammar',
         'grammar.configurable' => 'Configurable grammar (names, sort styles, casing)',
+        'grammar.custom' => 'Custom Grammar class',
         'paginate.total' => 'paginate() with a response total',
         'paginate.simple' => 'simplePaginate()',
         'paginate.lazy' => 'lazy() walk across pages',
@@ -99,6 +102,9 @@ final class Probes
         'custom' => CustomProbe::class,
     ];
 
+    /** Probes whose requests carry filter, sort or paging parameters. */
+    public const PARAMETER_PROBES = ['filter', 'where-in', 'sort', 'paginate', 'simple-paginate', 'lazy'];
+
     public static function for(string $name): Probe
     {
         $class = self::PROBES[$name] ?? throw new InvalidArgumentException("Unknown live probe [{$name}].");
@@ -112,5 +118,45 @@ final class Probes
     public static function names(): array
     {
         return array_keys(self::PROBES);
+    }
+
+    /**
+     * Grammar features exercised by a scenario, from the model's $grammar or the effective client config.
+     *
+     * @param  array<string, mixed>  $clientConfig
+     * @return list<string>
+     */
+    public static function grammarFeatures(array $clientConfig, ?string $modelClass): array
+    {
+        $grammar = $modelClass !== null
+            ? ((new \ReflectionClass($modelClass))->getDefaultProperties()['grammar'] ?? null)
+            : null;
+        $grammar ??= $clientConfig['grammar'] ?? null;
+
+        if (is_string($grammar)) {
+            return [match (true) {
+                is_a($grammar, JsonApiGrammar::class, true) => 'grammar.jsonapi',
+                is_a($grammar, PlainGrammar::class, true) => 'grammar.plain',
+                default => 'grammar.custom',
+            }];
+        }
+
+        $query = $clientConfig['query'] ?? null;
+
+        if ($query === null) {
+            return ['grammar.plain'];
+        }
+
+        if (is_string($query)) {
+            return ["grammar.{$query}"];
+        }
+
+        $features = isset($query['preset']) ? ["grammar.{$query['preset']}"] : [];
+
+        if (array_diff(array_keys($query), ['preset']) !== []) {
+            $features[] = 'grammar.configurable';
+        }
+
+        return $features;
     }
 }

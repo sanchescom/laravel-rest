@@ -3,6 +3,10 @@
 declare(strict_types=1);
 
 use Sanchescom\Rest\Model;
+use Sanchescom\Rest\Query\Grammar;
+use Sanchescom\Rest\Query\JsonApiGrammar;
+use Sanchescom\Rest\Query\PlainGrammar;
+use Sanchescom\Rest\Query\QueryState;
 use Sanchescom\Rest\Tests\Live\Probes\Probe;
 use Sanchescom\Rest\Tests\Live\Probes\Probes;
 
@@ -37,4 +41,32 @@ it('derives features from scenario shape', function (string $probe, array $scena
     'basic auth' => ['auth', ['client' => ['auth' => ['driver' => 'basic']]], ['auth.basic']],
     'memo' => ['cache', ['kind' => 'memo'], ['cache.memo']],
     'unsupported' => ['unsupported', [], []],
+]);
+
+class ProbesTestCustomGrammar implements Grammar
+{
+    public function compile(QueryState $state): array
+    {
+        return [];
+    }
+}
+
+class ProbesTestJsonApiModel extends Model
+{
+    protected ?string $grammar = JsonApiGrammar::class;
+}
+
+it('derives grammar features from the effective client config', function (array $config, ?string $model, array $features) {
+    expect(Probes::grammarFeatures($config, $model))->toBe($features);
+})->with([
+    'no config' => [[], null, ['grammar.plain']],
+    'plain grammar class' => [['grammar' => PlainGrammar::class], null, ['grammar.plain']],
+    'json:api grammar class' => [['grammar' => JsonApiGrammar::class], null, ['grammar.jsonapi']],
+    'custom grammar class' => [['grammar' => ProbesTestCustomGrammar::class], null, ['grammar.custom']],
+    'jsonapi preset string' => [['query' => 'jsonapi'], null, ['grammar.jsonapi']],
+    'django preset string' => [['query' => 'django'], null, ['grammar.django']],
+    'preset with overrides' => [['query' => ['preset' => 'django', 'names' => ['limit' => 'size']]], null, ['grammar.django', 'grammar.configurable']],
+    'preset only in array' => [['query' => ['preset' => 'jsonapi']], null, ['grammar.jsonapi']],
+    'plain configurable' => [['query' => ['sort' => 'separate']], null, ['grammar.configurable']],
+    'model grammar wins' => [['query' => 'django'], ProbesTestJsonApiModel::class, ['grammar.jsonapi']],
 ]);
