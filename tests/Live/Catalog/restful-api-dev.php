@@ -27,6 +27,7 @@ return [
     'docs' => 'https://restful-api.dev/',
     'base_uri' => 'https://api.restful-api.dev/',
     'throttle_ms' => 500,
+    'outage_statuses' => [405],
     'traits' => [
         'response' => 'bare-array / bare-object',
         'pagination' => 'none (13 seed objects)',
@@ -34,6 +35,7 @@ return [
         'keys' => 'string id (seed "1".."13", created hex)',
         'writes' => 'persisted; seed ids reserved (405)',
         'errors' => '404 {"error"}, 405 reserved id',
+        'quota' => '50 requests/day per IP; exhaustion answers HTTP 405 with a rate-limit body',
     ],
     'scenarios' => [
         'list objects' => ['probe' => 'list', 'model' => ObjectModel::class, 'min' => 13, 'fields' => ['id', 'name']],

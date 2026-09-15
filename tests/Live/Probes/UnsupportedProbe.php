@@ -30,7 +30,7 @@ final class UnsupportedProbe extends AbstractProbe
         } catch (LiveUnsupported $nested) {
             throw $nested;
         } catch (\Throwable $error) {
-            if (Outage::is($error)) {
+            if (Outage::is($error, $context->api['outage_statuses'] ?? [])) {
                 throw $error;
             }
 

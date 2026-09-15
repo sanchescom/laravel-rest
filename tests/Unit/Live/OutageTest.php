@@ -24,3 +24,9 @@ it('treats network failures, server errors and rate limits as outages', function
     'client error' => [new RequestException('x', 400), false],
     'other' => [new RuntimeException('boom'), false],
 ]);
+
+it('treats extra statuses as outages only when declared, and only for the status they name', function () {
+    expect(Outage::is(new RequestException('x', 405)))->toBeFalse();
+    expect(Outage::is(new RequestException('x', 405), [405]))->toBeTrue();
+    expect(Outage::is(new ModelNotFoundException('x', 404), [405]))->toBeFalse();
+});

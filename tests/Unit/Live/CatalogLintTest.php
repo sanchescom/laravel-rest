@@ -42,6 +42,41 @@ function catalogFileNamespaces(string $file): array
     return $namespaces;
 }
 
+/**
+ * @param  mixed  $value
+ */
+function outageStatusesAreValid($value): bool
+{
+    if (! is_array($value) || $value === []) {
+        return false;
+    }
+
+    foreach ($value as $status) {
+        if (! is_int($status) || $status < 400 || $status > 599) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+it('requires outage_statuses (when declared) to be a non-empty list of ints between 400 and 599', function () {
+    foreach (LiveCatalog::apis() as $slug => $api) {
+        if (! array_key_exists('outage_statuses', $api)) {
+            continue;
+        }
+
+        expect(outageStatusesAreValid($api['outage_statuses']))->toBeTrue("API [{$slug}] has invalid outage_statuses.");
+    }
+});
+
+it('validates outage_statuses shape', function (mixed $value, bool $valid) {
+    expect(outageStatusesAreValid($value))->toBe($valid);
+})->with([
+    'rejects non-int entries' => [['nope'], false],
+    'accepts a valid status' => [[405], true],
+]);
+
 it('declares exactly one namespace per catalog file, matching Catalog\\StudlyCase(slug), unique across files', function () {
     $seen = [];
 

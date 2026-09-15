@@ -46,8 +46,9 @@ final class LiveRunner
             $features ??= self::declaredFeatures($definition);
             $reason = $error::class.': '.$error->getMessage();
             $requests = $context?->requests() ?? 0;
+            $outageStatuses = $api['outage_statuses'] ?? [];
 
-            if (Outage::is($error)) {
+            if (Outage::is($error, $outageStatuses)) {
                 LiveResults::record($slug, $scenario, $features, LiveResults::SKIP, $reason, $requests);
 
                 Assert::markTestSkipped('API unavailable: '.$reason);

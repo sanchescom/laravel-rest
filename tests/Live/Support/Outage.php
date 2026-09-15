@@ -16,7 +16,10 @@ final class Outage
     /** Outage-grade 5xx: gateway/proxy failures, not application server bugs. */
     private const OUTAGE_STATUSES = [502, 503, 504];
 
-    public static function is(Throwable $error): bool
+    /**
+     * @param  list<int>  $extraStatuses  API-specific statuses (e.g. a non-standard quota signal) treated as outages in addition to the built-in set.
+     */
+    public static function is(Throwable $error, array $extraStatuses = []): bool
     {
         // The package disables Guzzle's http_errors, so any TransferException
         // (connect failure, timeout, reset, ...) is a transport-level outage.
@@ -30,6 +33,7 @@ final class Outage
 
         return $error->status === 429
             || in_array($error->status, self::OUTAGE_STATUSES, true)
+            || in_array($error->status, $extraStatuses, true)
             || ($error->status >= 520 && $error->status <= 530);
     }
 }
