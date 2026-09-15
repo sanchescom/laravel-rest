@@ -50,6 +50,20 @@ final class LiveContext
         $throttle = (int) ($this->api['throttle_ms'] ?? 250);
 
         $stack = HandlerStack::create();
+
+        $options = array_replace_recursive(
+            ['timeout' => 20, 'headers' => ['User-Agent' => self::USER_AGENT, 'Accept' => 'application/json']],
+            $config['options'] ?? [],
+        );
+        $options['handler'] = $stack;
+
+        $client = GuzzleClient::fromConfig(
+            ['base_uri' => $this->api['base_uri'], 'options' => $options]
+            + array_intersect_key($config, array_flip(['auth', 'retry', 'errors_key', 'update_method'])),
+        );
+
+        // Push history and throttle after fromConfig() so they wrap auth and retry middleware,
+        // recording every attempt with applied auth headers and throttling.
         $stack->push(Middleware::history($this->history), 'live_history');
         $stack->push(Middleware::mapRequest(function (RequestInterface $request) use ($throttle) {
             $host = $request->getUri()->getHost();
@@ -63,17 +77,6 @@ final class LiveContext
 
             return $request;
         }), 'live_throttle');
-
-        $options = array_replace_recursive(
-            ['timeout' => 20, 'headers' => ['User-Agent' => self::USER_AGENT, 'Accept' => 'application/json']],
-            $config['options'] ?? [],
-        );
-        $options['handler'] = $stack;
-
-        $client = GuzzleClient::fromConfig(
-            ['base_uri' => $this->api['base_uri'], 'options' => $options]
-            + array_intersect_key($config, array_flip(['auth', 'retry', 'errors_key', 'update_method'])),
-        );
 
         $resolver = new ClientResolver(['live' => $client]);
         $resolver->setDefaultClient('live');
