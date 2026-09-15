@@ -108,10 +108,23 @@ final class LiveReport
             }
 
             foreach ($rows as $row) {
-                $lines[] = sprintf('- **%s › %s** — %s', $name($row['slug']), $row['scenario'], $row['reason']);
+                $lines[] = sprintf('- **%s › %s** — %s', $name($row['slug']), $row['scenario'], self::normalizeReason($row['reason']));
             }
         }
 
         return implode("\n", $lines)."\n";
+    }
+
+    private static function normalizeReason(string $reason): string
+    {
+        $normalized = (string) preg_replace('/[\r\n\t]+/', ' ', $reason);
+        $normalized = (string) preg_replace('/\s+/', ' ', $normalized);
+        $normalized = trim($normalized);
+
+        if (mb_strlen($normalized, 'UTF-8') > 300) {
+            $normalized = mb_substr($normalized, 0, 300, 'UTF-8').'…';
+        }
+
+        return $normalized;
     }
 }

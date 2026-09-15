@@ -37,3 +37,32 @@ it('renders coverage, apis, failures and limitations', function () {
         ->toContain('- **Gamma › retry** — ConnectException: down')
         ->toContain('pagination: cursor \| next');
 });
+
+it('keeps multi-line and long reasons on one list line', function () {
+    $apis = [
+        'alpha' => ['name' => 'Alpha', 'base_uri' => 'https://alpha.test/', 'traits' => [], 'scenarios' => []],
+        'beta' => ['name' => 'Beta', 'base_uri' => 'https://beta.test/', 'traits' => [], 'scenarios' => []],
+    ];
+
+    $results = [
+        'alpha|sort' => liveReportRow('alpha', 'sort', ['query.sort'], 'fail', "Failed asserting that two arrays are identical.\n--- Expected\n+++ Actual\n-    0 => 'a'"),
+        'beta|retry' => liveReportRow('beta', 'retry', ['retry.status'], 'skip', str_repeat('x', 400)),
+    ];
+
+    $markdown = LiveReport::render($apis, $results, '1.0.0', '2026-09-15 10:00 UTC');
+
+    expect($markdown)
+        ->toContain('- **Alpha › sort** — Failed asserting that two arrays are identical. --- Expected +++ Actual - 0 => \'a\'')
+        ->not->toContain('-    0 =>');
+
+    // Verify Beta › retry line has exactly 300 x's followed by …
+    $lines = explode("\n", $markdown);
+    $retryLines = array_filter($lines, fn ($line) => str_starts_with($line, '- **Beta › retry**'));
+    expect($retryLines)->toHaveCount(1);
+
+    $retryLine = reset($retryLines);
+    $reasonStart = mb_strpos($retryLine, '— ', 0, 'UTF-8');
+    expect($reasonStart)->not->toBe(false);
+    $reasonPart = mb_substr($retryLine, $reasonStart + 2, null, 'UTF-8');
+    expect($reasonPart)->toBe(str_repeat('x', 300).'…');
+});
