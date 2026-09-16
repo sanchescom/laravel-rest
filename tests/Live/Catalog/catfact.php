@@ -16,6 +16,17 @@ final class Fact extends Model
     protected string $primaryKey = 'fact';
 }
 
+final class FactLaravelPreset extends Model
+{
+    protected ?string $endpoint = 'facts';
+
+    protected ?string $dataKey = 'data';
+
+    protected string $primaryKey = 'fact';
+
+    protected array|string|null $pagination = 'laravel';
+}
+
 return [
     'name' => 'Cat Facts',
     'docs' => 'https://catfact.ninja/',
@@ -54,13 +65,16 @@ return [
                 // among 300 facts across 3 pages) and there is no id to key on instead.
                 // This verifies the walk mechanics directly: every page fetched, no gaps.
                 $count = 0;
+                $texts = [];
 
                 foreach ((new Fact)->newBuilder()->lazy(100)->take(300) as $model) {
                     $count++;
+                    $texts[$model->getKey()] = true;
                 }
 
                 expect($count)->toBe(300)
-                    ->and($context->requests())->toBe(3);
+                    ->and($context->requests())->toBe(3)
+                    ->and(count($texts))->toBeGreaterThan(280);
             },
         ],
         'response cache' => [
@@ -77,6 +91,7 @@ return [
             'probe' => 'unsupported',
             'features' => ['paginate.total'],
             'reason' => "The raw paginator is flat (total, next_page_url), not the 'laravel' preset's meta.total/links.next shape; the preset would read null and paginate() would report a total of 0. Configuring total/next explicitly (as this catalog does) works instead.",
+            'attempt' => ['probe' => 'paginate', 'model' => FactLaravelPreset::class, 'per_page' => 25],
         ],
     ],
 ];

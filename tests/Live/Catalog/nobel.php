@@ -78,6 +78,7 @@ return [
             'probe' => 'unsupported',
             'features' => ['query.sort'],
             'reason' => 'sort=asc|desc carries only a direction, always ordering by name; there is no field parameter, so orderBy() on another field cannot change the order (curl-verified: sort=asc and sort=desc both order by knownName regardless of requested field).',
+            'attempt' => ['probe' => 'sort', 'model' => Laureate::class, 'field' => 'id', 'direction' => 'desc'],
         ],
         'missing laureate' => [
             'probe' => 'unsupported',

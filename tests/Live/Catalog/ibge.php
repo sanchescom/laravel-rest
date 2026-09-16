@@ -74,7 +74,8 @@ return [
         'sort' => [
             'probe' => 'unsupported',
             'features' => ['query.sort'],
-            'reason' => 'orderBy=nome only accepts a field name, never a direction, and server collation of accented names (Pará, Paraíba, Paraná) differs from PHP byte order, so a descending orderBy() cannot be verified as reversed.',
+            'reason' => 'The default grammar sends sort=-nome (not the orderBy=nome the API actually reads), so the API silently ignores the param entirely and returns its fixed default order regardless of requested field or direction (curl-verified: sort=nome and sort=-nome both return the same order).',
+            'attempt' => ['probe' => 'sort', 'model' => Estado::class, 'field' => 'nome', 'direction' => 'desc'],
         ],
         'multi ids' => [
             'probe' => 'unsupported',

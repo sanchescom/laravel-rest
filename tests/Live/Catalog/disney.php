@@ -15,6 +15,17 @@ final class Character extends Model
     protected string $primaryKey = '_id';
 }
 
+final class CharacterBadTotal extends Model
+{
+    protected ?string $endpoint = 'character';
+
+    protected ?string $dataKey = 'data';
+
+    protected string $primaryKey = '_id';
+
+    protected array|string|null $pagination = ['total' => 'info.count'];
+}
+
 return [
     'name' => 'Disney API',
     'docs' => 'https://disneyapi.dev/docs/',
@@ -29,6 +40,7 @@ return [
     'client' => [
         'query' => ['names' => ['limit' => 'pageSize']],
         'pagination' => ['style' => 'page', 'next' => 'info.nextPage'],
+        'options' => ['timeout' => 30],
     ],
     'scenarios' => [
         'list characters' => [
@@ -62,6 +74,7 @@ return [
             'probe' => 'unsupported',
             'features' => ['paginate.total'],
             'reason' => 'info.count is the number of items on the current page, not the collection total (only info.totalPages is available).',
+            'attempt' => ['probe' => 'paginate', 'model' => CharacterBadTotal::class, 'per_page' => 50],
         ],
         'missing character' => [
             'probe' => 'unsupported',

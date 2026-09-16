@@ -8,9 +8,18 @@ use Sanchescom\Rest\Model;
 
 final class Wanted extends Model
 {
-    protected ?string $endpoint = 'list';
+    protected ?string $endpoint = 'wanted/v1/list';
 
     protected ?string $dataKey = 'items';
+
+    protected string $primaryKey = 'uid';
+}
+
+final class WantedPerson extends Model
+{
+    protected ?string $endpoint = '@wanted-person';
+
+    protected ?string $dataKey = null;
 
     protected string $primaryKey = 'uid';
 }
@@ -18,7 +27,7 @@ final class Wanted extends Model
 return [
     'name' => 'FBI Wanted',
     'docs' => 'https://www.fbi.gov/wanted/api',
-    'base_uri' => 'https://api.fbi.gov/wanted/v1/',
+    'base_uri' => 'https://api.fbi.gov/',
     'throttle_ms' => 1000,
     'traits' => [
         'response' => 'items + total',
@@ -66,11 +75,15 @@ return [
             'chunk' => 50,
             'take' => 150,
         ],
-        'detail' => [
-            'probe' => 'unsupported',
-            'features' => ['read.find', 'errors.not-found'],
-            'reason' => 'The documented detail path (@wanted-person/{uid}) returns 404 {"detail":"Not Found"} for a uid taken straight from the list, so there is no working per-id endpoint to back find().',
-            'attempt' => ['probe' => 'find', 'model' => Wanted::class, 'id' => '109f69822bdb4bd9bd6ea15da5d4f19d'],
+        'find wanted person' => [
+            'probe' => 'find',
+            'model' => WantedPerson::class,
+            'id' => '109f69822bdb4bd9bd6ea15da5d4f19d',
+        ],
+        'missing wanted person' => [
+            'probe' => 'not-found',
+            'model' => WantedPerson::class,
+            'id' => 'doesnotexist123',
         ],
     ],
 ];

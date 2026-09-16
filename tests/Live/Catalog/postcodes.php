@@ -66,7 +66,7 @@ return [
         'postcode keys' => [
             'probe' => 'unsupported',
             'features' => ['read.find'],
-            'reason' => 'postcodes/SW1A2AA (no space) resolves and returns postcode "SW1A 2AA" (space inserted), so getKey() never equals the id requested and find() cannot report a match.',
+            'reason' => 'find() itself works (see "find outcode"); this is a narrower key-normalisation gap: postcodes/SW1A2AA (no space) still resolves 200 but the API re-inserts the space in the response ("SW1A 2AA"), so getKey() never equals the squished id that was requested for this specific input format.',
             'attempt' => ['probe' => 'find', 'model' => Postcode::class, 'id' => 'SW1A2AA'],
         ],
     ],

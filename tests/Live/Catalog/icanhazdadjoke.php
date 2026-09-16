@@ -25,6 +25,17 @@ final class JokeSearch extends Model
     protected array $headers = ['Accept' => 'application/json'];
 }
 
+final class JokeSearchNextPage extends Model
+{
+    protected ?string $endpoint = 'search';
+
+    protected ?string $dataKey = 'results';
+
+    protected array $headers = ['Accept' => 'application/json'];
+
+    protected array|string|null $pagination = ['next' => 'next_page'];
+}
+
 return [
     'name' => 'icanhazdadjoke',
     'docs' => 'https://icanhazdadjoke.com/api',
@@ -61,8 +72,9 @@ return [
             'probe' => 'unsupported',
             'features' => ['paginate.simple'],
             'reason' => 'next_page is an integer, not a link or has-more flag; the simple-paginate config needs a non-empty string path to a next-page indicator, so only full-page inference is usable.',
+            'attempt' => ['probe' => 'simple-paginate', 'model' => JokeSearchNextPage::class, 'query' => fn (Builder $query) => $query->withQuery(['term' => 'cat']), 'per_page' => 5],
         ],
-        'search pagination' => [
+        'paginate search' => [
             'probe' => 'unsupported',
             'features' => ['paginate.total', 'paginate.style.page'],
             'reason' => "Search results come back in a non-deterministic order: repeating the identical request returns a different item order (curl-verified across 3 runs), and the same joke id can appear on both page 1 and page 2 of one run. Page boundaries are not stable, so paginate()'s non-overlap guarantee cannot be relied on even though total_jokes itself is correct.",

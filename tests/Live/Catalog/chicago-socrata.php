@@ -54,10 +54,20 @@ final class Crime extends Model
     protected ?string $grammar = SocrataGrammar::class;
 }
 
+final class CrimeRow extends Model
+{
+    protected ?string $endpoint = 'ijzp-q8t2';
+
+    protected ?string $dataKey = null;
+
+    protected string $primaryKey = 'id';
+}
+
 return [
     'name' => 'City of Chicago (Socrata SODA)',
     'docs' => 'https://dev.socrata.com/docs/endpoints',
     'base_uri' => 'https://data.cityofchicago.org/resource/',
+    'throttle_ms' => 1000,
     'traits' => [
         'response' => 'bare-array',
         'pagination' => 'offset ($limit + $offset); no totals (separate $select=count(*) needed)',
@@ -109,10 +119,10 @@ return [
             'features' => ['paginate.total'],
             'reason' => 'List responses carry no total; getting a count needs a separate $select=count(*) request that paginate() never issues.',
         ],
-        'detail' => [
-            'probe' => 'unsupported',
-            'features' => ['read.find'],
-            'reason' => 'Rows are addressed with ?id=value on the collection endpoint, not a /{id} path, so find() has no per-id URL to call.',
+        'find crime' => [
+            'probe' => 'find',
+            'model' => CrimeRow::class,
+            'id' => '13311263',
         ],
     ],
 ];

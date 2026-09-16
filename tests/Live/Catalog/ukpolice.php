@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sanchescom\Rest\Tests\Live\Catalog\Ukpolice;
 
+use Sanchescom\Rest\Builder;
 use Sanchescom\Rest\Model;
 use Sanchescom\Rest\Relations\HasMany;
 
@@ -22,6 +23,13 @@ final class Force extends Model
 final class Person extends Model
 {
     protected ?string $endpoint = 'people';
+
+    protected ?string $dataKey = null;
+}
+
+final class BicycleTheft extends Model
+{
+    protected ?string $endpoint = 'crimes-street/bicycle-theft';
 
     protected ?string $dataKey = null;
 }
@@ -75,15 +83,24 @@ return [
             'kind' => 'memo',
             'id' => 'leicestershire',
         ],
-        'paging/filter/sort' => [
+        'bicycle theft filter' => [
+            'probe' => 'filter',
+            'model' => BicycleTheft::class,
+            'query' => fn (Builder $query) => $query->withQuery(['lat' => '52.629729', 'lng' => '-1.131592']),
+            'field' => 'date',
+            'attribute' => 'month',
+            'value' => '2024-01',
+            'min' => 5,
+        ],
+        'paging/sort' => [
             'probe' => 'unsupported',
-            'features' => ['paginate.lazy', 'query.filter', 'query.sort'],
-            'reason' => 'Reference endpoints (forces, forces/{id}/people) return the whole collection with no page/filter/sort params; crime endpoints instead take lat/lng/date or polygons, a different shape entirely.',
+            'features' => ['paginate.lazy', 'query.sort'],
+            'reason' => 'Reference endpoints (forces, forces/{id}/people) return the whole collection with no page/sort params; crime endpoints filter by lat/lng/date (see "bicycle theft filter") but still return everything for that month with no way to sort or page the result.',
         ],
         'eager nested people' => [
             'probe' => 'unsupported',
             'features' => ['eager.concurrent'],
-            'reason' => 'The parent forces list cannot be limited (44 forces -> 44 requests to eager-load people for all of them); skipped to stay polite to the API.',
+            'reason' => 'Not a package limitation: the parent forces list cannot be limited (44 forces), so eager-loading people for all of them would fire 44 concurrent requests just to prove a mechanism already covered by the nested has-many probe. Skipped as a politeness skip toward the API, not because eager loading fails here.',
         ],
     ],
 ];
