@@ -20,8 +20,36 @@ What laravel-rest supports as of 1.6.0 — and what it deliberately does not.
 
 ## Live Verification
 
-Verified against: JSONPlaceholder, httpbin, job-api (internal),
-OpenAI-compatible endpoints, Anthropic. Findings from those runs:
+Every feature in this document is exercised against real public APIs by the
+catalog in `tests/Live/Catalog` (62 APIs, 470 scenarios, run nightly by the
+`live-verification` workflow). The generated, per-feature matrix lives in
+[live-verification.md](live-verification.md) — each feature is confirmed on at
+least three structurally different APIs, and the report lists every API a
+feature was confirmed on and every one where it could not be used.
+
+The APIs were picked for structural diversity, not topic: page / offset /
+cursor pagination, bare arrays and `data` / `results` / `hydra:member` /
+`response.docs` envelopes, JSON:API and Django and Socrata and OData and CKAN
+query dialects, RPC-shaped paths, and several that break REST outright.
+
+Recurring shapes that the package cannot express today (each reproduced on
+several APIs; see the Limitations section of the report and `ROADMAP.md`):
+
+- **Pagination metadata in headers** — totals in `X-Total-Count` / `X-WP-Total`,
+  next links in `Link`. `paginate()` reads totals from the body only.
+- **Repeated query params** — `id=1&id=2` or `ids[]=a&ids[]=b` for membership
+  filters; `whereIn()` always renders one comma-joined value.
+- **A batch filter named differently from the key** — `batch()` filters with
+  the key's own name, but APIs expect `ids`, `by_ids`, `uuids`.
+- **Space-separated sort direction** — `$order=date DESC` (Socrata, OData, CKAN).
+- **Errors inside HTTP 200** — not-found reported with a 200 and an error body
+  or an empty payload, so `ModelNotFoundException` never fires.
+- **Detail paths that are not `{endpoint}/{id}`** — `Products(1)`,
+  `item/{id}.json`, `package_show?id=`. `from()` covers the fixed-path cases.
+- **Positional-array rows** — rows returned as JSON arrays rather than objects
+  raise a `TypeError` from `Model::fill()` instead of a typed exception.
+
+Auth findings from earlier runs against private endpoints:
 
 - **Header auth casing is API-specific.** FastAPI's `APIKeyHeader` emits
   `X-API-Key` (capital K). Use the exact casing the API expects — the `header`
