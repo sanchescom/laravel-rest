@@ -4,6 +4,36 @@ All notable changes to this project will be documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/) and this
 project adheres to [Semantic Versioning](https://semver.org/).
 
+## 1.6.1
+
+No runtime changes — verification, documentation and package metadata only.
+
+### Added
+
+- **Live verification suite** (`tests/Live`) — every feature is exercised
+  against real public APIs chosen for structural diversity: 62 APIs and 470
+  scenarios, each feature confirmed on at least three of them. Scenarios record
+  `pass`, `fail`, `skip` (the API was unavailable) or `unsupported` (a
+  documented limitation that must reproduce, and fails the suite when it stops
+  reproducing). Run with `composer live:catalog && composer live:report`.
+- **`docs/live-verification.md`** — the generated per-feature coverage matrix
+  and the full list of reproduced limitations.
+- **Nightly `live-verification` workflow** — runs the catalog at 03:30 UTC and
+  uploads the report and raw results as artifacts.
+
+### Changed
+
+- `docs/capabilities.md` documents the recurring API shapes the package cannot
+  express yet, each reproduced on several APIs.
+- Widened the `composer.json` keywords so Packagist search finds the package by
+  task (`eloquent`, `api-client`, `orm`) rather than only by name.
+
+### Notes
+
+- The run found one robustness defect, tracked in `ROADMAP.md`: APIs that return
+  rows as positional arrays (OpenSky, Dog CEO's breed map) reach `Model::fill()`
+  with integer keys and raise a raw `TypeError` instead of a typed exception.
+
 ## 1.6.0
 
 ### Added
