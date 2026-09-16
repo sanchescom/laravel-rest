@@ -8,6 +8,7 @@ use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Middleware;
 use Illuminate\Config\Repository;
 use Psr\Http\Message\RequestInterface;
+use Psr\Http\Message\ResponseInterface;
 use Sanchescom\Rest\ClientManager;
 use Sanchescom\Rest\Clients\ClientFactory;
 use Sanchescom\Rest\Clients\GuzzleClient;
@@ -48,9 +49,31 @@ final class LiveContext
         $this->useClient(array_replace_recursive($api['client'] ?? [], $override));
     }
 
+    /**
+     * Number of logical requests. Guzzle's history middleware records every
+     * redirect hop (e.g. Django APPEND_SLASH answering GET /x with a 301/302
+     * to /x/), but a redirect hop is transport, not a distinct logical
+     * request — so it's excluded here. An entry with no response (a
+     * transport error) still counts. Use history for the full hop list.
+     */
     public function requests(): int
     {
-        return count($this->history);
+        return count(array_filter($this->history, fn (array $entry) => ! $this->isRedirect($entry)));
+    }
+
+    /**
+     * Number of 3xx redirect hops recorded in history.
+     */
+    public function redirects(): int
+    {
+        return count(array_filter($this->history, fn (array $entry) => $this->isRedirect($entry)));
+    }
+
+    private function isRedirect(array $entry): bool
+    {
+        return $entry['response'] instanceof ResponseInterface
+            && $entry['response']->getStatusCode() >= 300
+            && $entry['response']->getStatusCode() < 400;
     }
 
     /**

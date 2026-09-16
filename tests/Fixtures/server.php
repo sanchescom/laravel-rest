@@ -112,6 +112,12 @@ switch (true) {
         echo json_encode(['error' => ['details' => ['name' => ['Required.']]]]);
         break;
 
+    case preg_match('#^redirect/(\d+)$#', $path, $m) === 1:
+        $base = '/plain/items';
+        http_response_code(302);
+        header('Location: '.$base);
+        break;
+
     case preg_match('#^posts/(\d+)/comments$#', $path, $m) === 1 && $method === 'GET':
         echo json_encode([['id' => 10, 'postId' => (int) $m[1]], ['id' => 11, 'postId' => (int) $m[1]]]);
         break;

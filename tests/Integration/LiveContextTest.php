@@ -67,3 +67,18 @@ it('throttles concurrent requests per host without blocking the pool', function 
         ->and($delays[1])->toBeGreaterThanOrEqual(250)
         ->and($delays[2])->toBeGreaterThanOrEqual(550);
 })->group('integration');
+
+it('counts logical requests, not redirect hops', function () {
+    $context = new LiveContext('fixture', [
+        'name' => 'Fixture',
+        'base_uri' => FixtureServer::$baseUri,
+        'throttle_ms' => 0,
+        'scenarios' => [],
+    ]);
+
+    Model::getClientResolver()->client()->get('redirect/1');
+
+    expect($context->history)->toHaveCount(2)
+        ->and($context->requests())->toBe(1)
+        ->and($context->redirects())->toBe(1);
+})->group('integration');
