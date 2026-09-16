@@ -1,0 +1,48 @@
+name: Live Verification
+
+# Runs the live catalog (tests/Live/Catalog) against real public APIs and
+# publishes the generated report as an artifact. Nothing is committed: the
+# report in docs/ is refreshed by hand from a local run.
+on:
+  schedule:
+    # 03:30 UTC — outside business hours for most of the catalogued APIs.
+    - cron: '30 3 * * *'
+  workflow_dispatch:
+    inputs:
+      only:
+        description: 'Comma-separated catalog slugs to run (empty = whole catalog)'
+        required: false
+        default: ''
+
+concurrency:
+  group: live-verification
+  cancel-in-progress: false
+
+jobs:
+  catalog:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    name: Live catalog
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+      - run: composer update --prefer-dist --no-interaction
+      - name: Run the live catalog
+        env:
+          LIVE_ONLY: ${{ github.event.inputs.only }}
+        run: composer live:catalog
+      - name: Generate the report
+        if: always()
+        run: composer live:report
+      - name: Upload the report and raw results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: live-verification
+          path: |
+            docs/live-verification.md
+            build/live/results.jsonl
+          retention-days: 30

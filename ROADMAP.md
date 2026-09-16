@@ -104,9 +104,9 @@ Widening the set of APIs the package can talk to.
   persistent curl share handles).
 - **DX:** `php artisan make:rest-model User --client=crm` generator; more
   grammar presets (e.g. Spring, Stripe-style).
-- **CI:** nightly job for the live verification catalog
-  (`composer live:catalog`), uploading the report as an artifact; currently
-  run manually.
+- ~~**CI:**~~ Done: nightly GitHub Actions job (`.github/workflows/live-verification.yml`)
+  runs the live verification catalog and uploads the report and raw results as
+  artifacts; `workflow_dispatch` takes a `LIVE_ONLY` slug list.
 - **Visibility:** GitHub topics, richer package description, optionally a docs
   site generated from the markdown in `docs/`.
 
