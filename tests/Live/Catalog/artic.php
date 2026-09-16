@@ -56,7 +56,7 @@ return [
         'simple paginate artworks' => ['probe' => 'simple-paginate', 'model' => Artwork::class, 'per_page' => 10],
         'lazy walk agents' => ['probe' => 'lazy', 'model' => Agent::class, 'chunk' => 20, 'take' => 60],
         'artwork artist' => ['probe' => 'belongs-to', 'model' => Artwork::class, 'id' => 27992, 'relation' => 'artist', 'foreign_key' => 'artist_id'],
-        'eager artists' => ['probe' => 'eager', 'model' => Artwork::class, 'query' => fn (Builder $query) => $query->limit(5)->withQuery(['fields' => 'id,artist_id']), 'relation' => 'artist', 'mode' => 'concurrent', 'foreign_key' => 'artist_id'],
+        'eager artists' => ['probe' => 'eager', 'model' => Artwork::class, 'query' => fn (Builder $query) => $query->withQuery(['ids' => '27992,28560,28067,129884', 'fields' => 'id,artist_id']), 'relation' => 'artist', 'mode' => 'concurrent', 'foreign_key' => 'artist_id'],
         'missing artwork' => ['probe' => 'not-found', 'model' => Artwork::class, 'id' => 999999999],
         'response cache' => ['probe' => 'cache', 'kind' => 'response', 'model' => Artwork::class, 'id' => 27992],
         'search filters and sort' => [

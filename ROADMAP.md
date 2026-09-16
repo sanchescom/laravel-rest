@@ -48,6 +48,12 @@ the live verification program (`docs/live-verification.md`):
   path template instead of the fixed `{endpoint}/{id}`.
 - **One-based offsets.** `offset` must start at 1 (USGS): an `'offset_base'`
   pagination option.
+- **Positional-array rows crash hydration.** APIs that return rows as JSON
+  arrays instead of objects (OpenSky `states`, Dog CEO's breed map) reach
+  `Model::fill()` with integer keys and raise a raw `TypeError` from
+  `isFillable(string $key)` on a well-formed HTTP 200. `Builder::hydrate()`
+  already degrades non-array items to an empty model; list-shaped items
+  should either follow that path or raise a typed exception.
 - **Standalone `ClientResolver` ignores request options.** `withHeaders()`
   and model `$headers` / `$options` do nothing outside Laravel's
   `ClientManager`: make the standalone resolver options-aware.
