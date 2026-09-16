@@ -2,7 +2,7 @@
     "name": "sanchescom/laravel-rest",
     "description": "Eloquent-like models and collections for consuming REST APIs.",
     "license": "MIT",
-    "keywords": ["laravel", "rest", "api", "client", "model"],
+    "keywords": ["laravel", "eloquent", "rest", "rest-api", "api", "api-client", "http-client", "client", "model", "orm", "sdk", "guzzle"],
     "authors": [
         {"name": "Alexander Efimov", "email": "sanches.com@mail.ru"}
     ],

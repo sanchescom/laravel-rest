@@ -12,6 +12,26 @@ Define a model, point it at an endpoint, and work with remote resources the way
 you work with Eloquent: `User::get()`, `User::get($id)`, `User::post([...])`,
 `$user->put()`, `User::delete($id)`.
 
+```php
+class Post extends Model
+{
+    protected ?string $endpoint = 'posts';
+
+    public function author(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+}
+
+Post::where('status', 'published')->orderBy('created_at')->with('author')->paginate(15);
+```
+
+No request class per endpoint, no DTO per response — one model per resource, and
+the query builder writes the URLs. Every feature is verified against **62 real
+public APIs** with 470 scenarios, so the awkward shapes (totals in headers,
+cursor pagination, errors inside HTTP 200) are documented rather than
+discovered in production — see [Live Verification](docs/live-verification.md).
+
 ## Table of Contents
 
 - [Requirements](#requirements) · [Installation](#installation) · [Quick Start](#quick-start)
