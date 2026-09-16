@@ -50,7 +50,7 @@ return [
             'probe' => 'headers',
             'model' => SetModel::class,
             'id' => 'khm',
-            'headers' => ['Accept' => 'application/json'],
+            'headers' => ['Accept' => 'application/json;q=0.9'],
             'echo' => false,
         ],
         'find set' => [
@@ -78,15 +78,27 @@ return [
             'per_page' => 175,
             'last_page' => 2,
         ],
+        'paginate by total_cards' => [
+            'probe' => 'paginate',
+            'model' => CardSearchResult::class,
+            'query' => fn (Builder $query) => $query->withQuery(['q' => 'set:khm']),
+            'per_page' => 175,
+        ],
         'missing set' => [
             'probe' => 'not-found',
             'model' => SetModel::class,
             'id' => 'doesnotexistlive',
         ],
+        'empty search' => [
+            'probe' => 'status',
+            'model' => CardSearchResult::class,
+            'query' => fn (Builder $query) => $query->withQuery(['q' => '']),
+            'status' => 400,
+        ],
         'page size' => [
             'probe' => 'unsupported',
-            'features' => ['paginate.total', 'paginate.lazy'],
-            'reason' => 'Page size is fixed at 175 (~400 KB per page) and the limit param is not accepted, so paginate()/lazy() walks would be heavy; no attempt here to avoid pulling multi-hundred-KB pages just to prove it.',
+            'features' => ['paginate.lazy'],
+            'reason' => 'Page size is fixed at 175 (~400 KB per page) and the limit param is not accepted, so a lazy() walk would pull multi-hundred-KB pages just to prove it; no attempt here to avoid that cost. paginate.total is not blocked by this — see "paginate by total_cards" above.',
         ],
         'filters' => [
             'probe' => 'unsupported',

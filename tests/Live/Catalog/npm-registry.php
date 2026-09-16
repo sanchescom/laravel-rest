@@ -48,7 +48,7 @@ return [
             'min' => 20,
             'fields' => ['package.name'],
         ],
-        'paginate search' => [
+        'paginate search (no key-overlap check: search hits have no flat id)' => [
             'probe' => 'paginate',
             'model' => PackageSearchResult::class,
             'query' => fn (Builder $query) => $query->withQuery(['text' => 'laravel']),

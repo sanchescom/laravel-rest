@@ -79,8 +79,8 @@ return [
         ],
         'filters' => [
             'probe' => 'unsupported',
-            'features' => ['query.filter', 'query.where-in'],
-            'reason' => 'Filtering only understands the Lucene q= syntax; a plain where() renders symbol=CDK2 as a bare top-level param, which mygene ignores entirely (curl-verified: still matches the whole index, ~93M hits, not just CDK2). Batch lookup by many ids is a POST-only endpoint, which the package cannot use for reads.',
+            'features' => ['query.filter'],
+            'reason' => 'Filtering only understands the Lucene q= syntax; a plain where() renders symbol=CDK2 as a bare top-level param, which mygene ignores entirely (curl-verified: still matches the whole index, ~93M hits, not just CDK2). Batch lookup by many ids is a POST-only endpoint, which the package cannot use for reads — not claimed as query.where-in here since no GET attempt demonstrates it.',
             'attempt' => ['probe' => 'filter', 'model' => Query::class, 'field' => 'symbol', 'value' => 'CDK2', 'min' => 1],
         ],
     ],

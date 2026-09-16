@@ -33,6 +33,7 @@ return [
         'filters' => 'locale=',
         'keys' => 'slug',
         'errors' => 'Laravel 422 {"message","errors":{field:[..]}}; 404 JSON',
+        'quirks' => '"find event" / "missing event" pin an event ending 2026-09-20; both the events list and the site\'s own sitemap only ever expose current/upcoming events (curl-verified: no reachable past-event slug), so whether event/{slug} still resolves once this one ends is unconfirmed — refresh the pinned slug after that date.',
     ],
     'scenarios' => [
         'list events' => [

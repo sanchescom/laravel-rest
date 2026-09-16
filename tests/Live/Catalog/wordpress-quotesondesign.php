@@ -60,13 +60,13 @@ return [
             'query' => fn (Builder $query) => $query->withQuery(['_fields' => 'id,author']),
             'id' => 2568,
         ],
-        'filter by author' => [
+        'filter by slug' => [
             'probe' => 'filter',
             'model' => Post::class,
-            'query' => fn (Builder $query) => $query->withQuery(['_fields' => 'id,author']),
-            'field' => 'author',
-            'value' => 2,
-            'min' => 10,
+            'query' => fn (Builder $query) => $query->withQuery(['_fields' => 'id,slug']),
+            'field' => 'slug',
+            'value' => 'aza-raskin',
+            'min' => 1,
         ],
         'sort by id asc' => [
             'probe' => 'sort',
@@ -109,7 +109,14 @@ return [
         'past last page' => [
             'probe' => 'unsupported',
             'features' => ['paginate.lazy'],
-            'reason' => 'Requesting a page beyond the last returns HTTP 400 rest_post_invalid_page_number instead of an empty array (curl-verified). lazy() has no total/has_more signal configured for this API, so it falls back to full-page inference (count>=perPage); whenever the walk\'s true last page happens to be exactly full, lazy() requests one more page and that request throws instead of stopping cleanly. Not attempted live: the post count drifts over time, so a fixed chunk size cannot reliably reproduce the exact-boundary case on every run.',
+            'reason' => 'Requesting a page beyond the last returns HTTP 400 rest_post_invalid_page_number instead of an empty array (curl-verified). lazy() has no total/has_more signal configured for this API, so it falls back to full-page inference (count>=perPage); pinning to a fixed 2-post set (include=2568,2563) with a chunk of 2 makes the page-1-is-exactly-full boundary deterministic, so lazy() always requests page 2 and that request throws instead of stopping cleanly.',
+            'attempt' => [
+                'probe' => 'lazy',
+                'model' => Post::class,
+                'query' => fn (Builder $query) => $query->withQuery(['include' => '2568,2563', '_fields' => 'id']),
+                'chunk' => 2,
+                'take' => 3,
+            ],
         ],
     ],
 ];
