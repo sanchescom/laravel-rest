@@ -1174,10 +1174,13 @@ Post::get(1); // works — no Laravel container involved
 See [docs/capabilities.md](docs/capabilities.md) for a full breakdown of what
 is supported, what is not, and how to extend it.
 
-Features are also being verified against real public APIs with different
-structures (pagination styles, envelopes, filters, error formats). Current
-per-feature coverage is tracked in [Live Verification](docs/live-verification.md),
-regenerated with `composer live:catalog && composer live:report`.
+Every feature is also verified against real public APIs with different
+structures (page / offset / cursor pagination, different envelopes, filter and
+sort dialects, error formats) — 62 APIs and 470 scenarios, with each feature
+confirmed on at least three of them. The per-feature matrix and the full list
+of reproduced limitations live in [Live Verification](docs/live-verification.md),
+regenerated with `composer live:catalog && composer live:report` and run nightly
+in CI.
 
 ## Roadmap
 
