@@ -11,9 +11,9 @@ function liveReportRow(string $slug, string $scenario, array $features, string $
 
 it('renders coverage, apis, failures and limitations', function () {
     $apis = [
-        'alpha' => ['name' => 'Alpha', 'base_uri' => 'https://alpha.test/', 'traits' => ['pagination' => 'cursor | next'], 'scenarios' => []],
-        'beta' => ['name' => 'Beta', 'base_uri' => 'https://beta.test/', 'traits' => [], 'scenarios' => []],
-        'gamma' => ['name' => 'Gamma', 'base_uri' => 'https://gamma.test/', 'traits' => [], 'scenarios' => []],
+        'alpha' => ['name' => 'Alpha', 'base_uri' => 'https://alpha.test/', 'traits' => ['pagination' => 'cursor | next'], 'scenarios' => ['list' => [], 'sort' => []]],
+        'beta' => ['name' => 'Beta', 'base_uri' => 'https://beta.test/', 'traits' => [], 'scenarios' => ['list' => [], 'filter' => []]],
+        'gamma' => ['name' => 'Gamma', 'base_uri' => 'https://gamma.test/', 'traits' => [], 'scenarios' => ['list' => [], 'retry' => []]],
     ];
 
     $results = [
@@ -40,8 +40,8 @@ it('renders coverage, apis, failures and limitations', function () {
 
 it('keeps multi-line and long reasons on one list line', function () {
     $apis = [
-        'alpha' => ['name' => 'Alpha', 'base_uri' => 'https://alpha.test/', 'traits' => [], 'scenarios' => []],
-        'beta' => ['name' => 'Beta', 'base_uri' => 'https://beta.test/', 'traits' => [], 'scenarios' => []],
+        'alpha' => ['name' => 'Alpha', 'base_uri' => 'https://alpha.test/', 'traits' => [], 'scenarios' => ['sort' => []]],
+        'beta' => ['name' => 'Beta', 'base_uri' => 'https://beta.test/', 'traits' => [], 'scenarios' => ['retry' => []]],
     ];
 
     $results = [
@@ -111,4 +111,43 @@ it('reports none not run when every declared scenario has a result', function ()
     $section = array_slice($lines, array_search('## Not run', $lines) + 1);
 
     expect(trim($section[1] ?? ''))->toBe('_None._');
+});
+
+it('ignores result rows whose scenario no longer exists in the catalog', function () {
+    $apis = [
+        'alpha' => [
+            'name' => 'Alpha',
+            'base_uri' => 'https://alpha.test/',
+            'traits' => [],
+            'scenarios' => ['list' => ['probe' => 'list']],
+        ],
+    ];
+
+    $results = [
+        'alpha|list' => liveReportRow('alpha', 'list', ['read.list'], 'pass'),
+        'alpha|removed scenario' => liveReportRow('alpha', 'removed scenario', ['query.sort'], 'fail', 'stale failure'),
+    ];
+
+    $markdown = LiveReport::render($apis, $results, '1.0.0', '2026-09-15 10:00 UTC');
+
+    expect($markdown)
+        ->toContain('1 APIs, 1 scenarios: ✅ 1 passed · ❌ 0 failed')
+        ->toContain('1 stale result rows ignored (scenario no longer in the catalog).')
+        ->not->toContain('removed scenario')
+        ->not->toContain('stale failure')
+        ->toContain('| `query.sort` | Sort on the server (orderBy) | ⚠️ 0 |');
+
+    $lines = explode("\n", $markdown);
+    $section = array_slice($lines, array_search('## Failures', $lines) + 1);
+
+    expect(trim($section[1] ?? ''))->toBe('_None._');
+});
+
+it('omits the stale line when there are no stale rows', function () {
+    $apis = ['alpha' => ['name' => 'Alpha', 'base_uri' => 'https://alpha.test/', 'traits' => [], 'scenarios' => ['list' => ['probe' => 'list']]]];
+    $results = ['alpha|list' => liveReportRow('alpha', 'list', ['read.list'], 'pass')];
+
+    $markdown = LiveReport::render($apis, $results, '1.0.0', '2026-09-15 10:00 UTC');
+
+    expect($markdown)->not->toContain('stale result rows ignored');
 });

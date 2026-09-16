@@ -23,6 +23,17 @@ final class LiveReport
         $perApi = array_fill_keys(array_keys($apis), array_fill_keys(self::STATUSES, 0));
         $totals = array_fill_keys(self::STATUSES, 0);
 
+        $stale = 0;
+
+        foreach ($results as $key => $row) {
+            if (! isset($apis[$row['slug']]['scenarios'][$row['scenario']])) {
+                unset($results[$key]);
+                $stale++;
+
+                continue;
+            }
+        }
+
         foreach ($results as $row) {
             $totals[$row['status']]++;
             $perApi[$row['slug']][$row['status']] = ($perApi[$row['slug']][$row['status']] ?? 0) + 1;
@@ -61,6 +72,14 @@ final class LiveReport
                 $totals[LiveResults::UNSUPPORTED],
                 count($notRun),
             ),
+        ];
+
+        if ($stale > 0) {
+            $lines[] = sprintf('%d stale result rows ignored (scenario no longer in the catalog).', $stale);
+        }
+
+        $lines = [
+            ...$lines,
             '',
             '## Feature coverage',
             '',
