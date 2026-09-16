@@ -32,7 +32,7 @@ return [
         'pagination' => 'limit + offset; total in numFound',
         'filters' => 'q plus title=/author= search params',
         'sort' => 'sort=new|old|rating (fixed keywords, not field+direction)',
-        'keys' => 'path keys (/works/OL27479W); entity endpoints need a .json suffix',
+        'keys' => 'path keys, e.g. "/works/OL27479W" under a key field; ids never appear as a bare "id" attribute',
     ],
     'client' => [
         'pagination' => ['style' => 'offset', 'total' => 'numFound'],
@@ -60,7 +60,7 @@ return [
         'entity detail' => [
             'probe' => 'unsupported',
             'features' => ['read.find', 'relation.belongs-to'],
-            'reason' => 'Entities need a .json suffix (works/OL27479W.json) and keys/fks are paths (/authors/OL26320A); get(id) requests works/{id} without the suffix, which 301-redirects to the HTML page (curl-verified), not the JSON API.',
+            'reason' => 'With the Accept: application/json header the harness always sends, GET works/OL27479W answers 200 JSON directly (curl-verified, no redirect); the attempt fails because the entity\'s id is the path string "/works/OL27479W" under a key field, which never appears as a bare id attribute, so read.find\'s key comparison (getKey() reads "id") cannot hold.',
             'attempt' => ['probe' => 'find', 'model' => WorkEntity::class, 'id' => 'OL27479W'],
         ],
         'sort' => [

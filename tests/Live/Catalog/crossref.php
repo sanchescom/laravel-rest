@@ -6,6 +6,7 @@ namespace Sanchescom\Rest\Tests\Live\Catalog\Crossref;
 
 use Sanchescom\Rest\Builder;
 use Sanchescom\Rest\Model;
+use Sanchescom\Rest\Relations\HasMany;
 
 final class Work extends Model
 {
@@ -21,12 +22,18 @@ final class Member extends Model
     protected ?string $endpoint = 'members';
 
     protected ?string $dataKey = 'message';
+
+    public function works(): HasMany
+    {
+        return $this->hasMany(Work::class, 'member')->nested();
+    }
 }
 
 return [
     'name' => 'Crossref REST API',
     'docs' => 'https://api.crossref.org/swagger-ui/index.html',
     'base_uri' => 'https://api.crossref.org/',
+    'throttle_ms' => 1000,
     'traits' => [
         'response' => 'double envelope: message.items (list) / message (detail), with a status wrapper',
         'pagination' => 'rows + offset; total in message.total-results',
@@ -62,6 +69,15 @@ return [
             'model' => Member::class,
             'ids' => [78, 311, 297],
         ],
+        'member works' => [
+            'probe' => 'has-many',
+            'model' => Member::class,
+            'id' => 78,
+            'relation' => 'works',
+            'nested' => true,
+            'path_suffix' => 'members/78/works',
+            'foreign_key' => 'member',
+        ],
         'sort by citations' => [
             'probe' => 'sort',
             'model' => Work::class,
@@ -95,8 +111,8 @@ return [
         ],
         'filters' => [
             'probe' => 'unsupported',
-            'features' => ['query.filter', 'relation.has-many'],
-            'reason' => 'Filters pack field:value pairs into one param (filter=member:78,type:journal-article); a plain where() renders member=78 as a bare top-level param, which the API rejects outright (curl-verified: 400 unknown-parameter) rather than filtering, so it also rules out a fk-style has-many via this endpoint.',
+            'features' => ['query.filter'],
+            'reason' => 'Filters pack field:value pairs into one param (filter=member:78,type:journal-article); a plain where() renders member=78 as a bare top-level param, which the API rejects outright (curl-verified: 400 unknown-parameter) rather than filtering.',
             'attempt' => ['probe' => 'filter', 'model' => Work::class, 'field' => 'member', 'value' => 78],
         ],
     ],

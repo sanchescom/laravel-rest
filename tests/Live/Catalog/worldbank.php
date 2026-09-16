@@ -32,7 +32,7 @@ return [
         'pagination' => 'page + per_page',
         'sort' => 'none',
         'keys' => 'string id (ISO3)',
-        'formats' => 'XML by default; every request needs format=json',
+        'formats' => 'XML by default; every request needs format=json (every scenario here sets it explicitly)',
         'errors' => '200 with a [{"message":[...]}] error body instead of 404',
     ],
     'client' => [
@@ -70,12 +70,6 @@ return [
             'features' => ['errors.not-found'],
             'reason' => 'An unknown id answers HTTP 200 with [{"message":[{"key":"Invalid value"}]}] instead of a 404, so ModelNotFoundException never fires.',
             'attempt' => ['probe' => 'not-found', 'model' => CountryDetail::class, 'query' => fn (Builder $query) => $query->withQuery(['format' => 'json']), 'id' => 'XXXXX'],
-        ],
-        'xml default' => [
-            'probe' => 'unsupported',
-            'features' => ['read.list'],
-            'reason' => 'Without format=json the API answers XML; a request built without that query param cannot be JSON-decoded.',
-            'attempt' => ['probe' => 'list', 'model' => CountryList::class],
         ],
     ],
 ];

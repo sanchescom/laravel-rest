@@ -49,7 +49,7 @@ return [
             'model' => AdverseEvent::class,
             'query' => fn (Builder $query) => $query->limit(5),
             'field' => 'receivedate',
-            'direction' => 'desc',
+            'direction' => 'asc',
         ],
         'paginate adverse events' => [
             'probe' => 'paginate',

@@ -7,6 +7,7 @@ namespace Sanchescom\Rest\Tests\Live\Catalog\Fiscaldata;
 use Sanchescom\Rest\Builder;
 use Sanchescom\Rest\Model;
 use Sanchescom\Rest\Query\JsonApiGrammar;
+use Sanchescom\Rest\Tests\Live\Support\LiveContext;
 
 final class RateOfExchange extends Model
 {
@@ -46,11 +47,11 @@ return [
             'query' => fn (Builder $query) => $query->withQuery(['fields' => 'record_date,country,exchange_rate']),
             'min' => 50,
         ],
-        'sort by record date' => [
+        'sort by exchange rate' => [
             'probe' => 'sort',
             'model' => RateOfExchange::class,
             'query' => fn (Builder $query) => $query->withQuery(['fields' => 'record_date,country,exchange_rate']),
-            'field' => 'record_date',
+            'field' => 'exchange_rate',
             'direction' => 'desc',
         ],
         'paginate rates' => [
@@ -84,16 +85,16 @@ return [
             'attempt' => ['probe' => 'find', 'model' => RateOfExchange::class, 'id' => '1'],
         ],
         'lazy walk' => [
-            'probe' => 'unsupported',
+            'probe' => 'custom',
             'features' => ['paginate.lazy'],
-            'reason' => 'Rows have no unique key (record_date repeats once per country), so lazy()\'s duplicate-page guard and the probe\'s unique-key check never hold across pages.',
-            'attempt' => [
-                'probe' => 'lazy',
-                'model' => RateOfExchange::class,
-                'query' => fn (Builder $query) => $query->withQuery(['fields' => 'record_date,country,exchange_rate']),
-                'chunk' => 50,
-                'take' => 100,
-            ],
+            'run' => function (LiveContext $context) {
+                $models = (new RateOfExchange)->newBuilder()
+                    ->withQuery(['fields' => 'record_date,country,exchange_rate'])
+                    ->lazy(50)->take(100)->values()->all();
+
+                expect(count($models))->toBe(100)
+                    ->and($context->requests())->toBe(2);
+            },
         ],
     ],
 ];

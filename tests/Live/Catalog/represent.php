@@ -6,6 +6,7 @@ namespace Sanchescom\Rest\Tests\Live\Catalog\Represent;
 
 use Sanchescom\Rest\Builder;
 use Sanchescom\Rest\Model;
+use Sanchescom\Rest\Tests\Live\Support\LiveContext;
 
 final class Representative extends Model
 {
@@ -66,13 +67,21 @@ return [
         'ids' => [
             'probe' => 'unsupported',
             'features' => ['read.find', 'read.get-many', 'errors.not-found'],
-            'reason' => 'Resources are identified by url path strings (/boundary-sets/federal-electoral-districts/) with no id attribute; get(id) has nothing meaningful to request.',
-            'attempt' => ['probe' => 'find', 'model' => Representative::class, 'id' => 'doesnotexist'],
+            'reason' => 'Resources are identified by url path strings (/boundary-sets/federal-electoral-districts/) with no id attribute. get(id) requests representatives/{id}, which 301-redirects (APPEND_SLASH) to representatives/{id}/ and answers 200 {"objects":[],"meta":{"total_count":0}} — a valid but keyless empty response, not a match and never a 404 — so read.find has nothing to compare against and errors.not-found never fires.',
+            'attempt' => ['probe' => 'find', 'model' => Representative::class, 'query' => fn (Builder $query) => $query->from('representatives'), 'id' => 'doesnotexist'],
         ],
         'django lookups' => [
-            'probe' => 'unsupported',
+            'probe' => 'custom',
             'features' => ['query.filter'],
-            'reason' => 'last_name__istartswith=Ab works as a where($field, $operator, $value) call, but the generic FilterProbe only asserts equality (where($field, $value)), so it cannot exercise or verify a prefix-match lookup.',
+            'run' => function (LiveContext $context) {
+                $models = (new Representative)->newBuilder()->where('last_name', 'istartswith', 'Ab')->get();
+
+                expect($models->count())->toBeGreaterThanOrEqual(1);
+
+                foreach ($models as $model) {
+                    expect(str_starts_with(strtolower((string) $model->getAttribute('last_name')), 'ab'))->toBeTrue();
+                }
+            },
         ],
     ],
 ];
