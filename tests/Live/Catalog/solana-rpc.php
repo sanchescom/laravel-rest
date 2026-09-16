@@ -27,8 +27,8 @@ return [
     'scenarios' => [
         'json-rpc' => [
             'probe' => 'unsupported',
-            'features' => ['read.find', 'read.list', 'errors.client'],
-            'reason' => 'Every call is POST {"jsonrpc":"2.0",...} to one endpoint; find()/list() always issue a GET, which the server rejects with HTTP 405 "Bad method" (curl-verified) — and even a real JSON-RPC error comes back as HTTP 200 with an error member, not a REST-style status code, so errors.client would misclassify it if a POST reply were ever routed through this probe.',
+            'features' => ['read.find', 'read.list'],
+            'reason' => 'Every call is POST {"jsonrpc":"2.0",...} to one endpoint; find()/list() always issue a GET, which the server rejects with HTTP 405 "Bad method" (curl-verified {"jsonrpc":"2.0","error":{"code":405,"message":"Bad method"}}), so no read ever reaches a result. The package raises a correct typed client error for that 405 — errors.client is therefore not claimed unsupported; what stays untested here is the JSON-RPC application-error shape (HTTP 200 carrying an error member), which needs a POST read path the package does not offer.',
             'attempt' => ['probe' => 'find', 'model' => RpcResponse::class, 'id' => 'getHealth'],
         ],
     ],

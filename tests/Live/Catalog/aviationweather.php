@@ -50,7 +50,7 @@ return [
         'no detail endpoint or pagination' => [
             'probe' => 'unsupported',
             'features' => ['read.find', 'paginate.lazy'],
-            'reason' => 'There is no path-based detail route: GET metar/KJFK 404s ("Not found") even though the station exists in the ids= list form; the API has no total/next for lazy() either.',
+            'reason' => 'There is no path-based detail route: GET metar/KJFK 404s ("Not found") even though the station exists in the ids= list form — that is what the attempt reproduces. paginate.lazy is a body-shape fact rather than an exercised call: the response is a bare array with no total, next link or page parameter for lazy() to advance on.',
             'attempt' => ['probe' => 'find', 'model' => Metar::class, 'id' => 'KJFK'],
         ],
     ],

@@ -36,7 +36,13 @@ return [
         'hydra paging has no total to test' => [
             'probe' => 'unsupported',
             'features' => ['paginate.total', 'paginate.simple'],
-            'reason' => 'hydra:totalItems is readable via a dotted dataKey, but only 1 domain exists on this instance so paginate()/simplePaginate() have no second page to walk; the next link lives at hydra:view."hydra:next" — a dot-notation path through a colon-bearing key that Arr::get cannot express as a single dotted string.',
+            'client' => ['pagination' => ['total' => 'hydra:totalItems']],
+            'reason' => 'hydra:totalItems is a perfectly usable pagination.total (a colon-bearing key holds no dots, so Arr::get resolves it), but this instance publishes exactly one domain — curl-verified hydra:totalItems 1, and page=2 answers an empty hydra:member — so paginate()/simplePaginate() have no second page to walk and the total can never exceed one page. hydra:view here is a bare PartialCollectionView with no hydra:next member at all.',
+            'attempt' => [
+                'probe' => 'paginate',
+                'model' => Domain::class,
+                'per_page' => 1,
+            ],
         ],
         'writes create a real mailbox' => [
             'probe' => 'unsupported',

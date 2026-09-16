@@ -35,7 +35,8 @@ return [
         'cursor paging has no total or offset' => [
             'probe' => 'unsupported',
             'features' => ['paginate.total', 'paginate.simple', 'paginate.lazy'],
-            'reason' => 'The next page is reachable only via an opaque cursor token returned in the body (cursor); there is no total count and no page/offset for paginate()/simplePaginate()/lazy() to send — paginate() requires pagination.total to be configured, which this endpoint has nothing to point at.',
+            'client' => ['pagination' => ['total' => 'total']],
+            'reason' => 'The next page is reachable only via an opaque cursor token returned in the body; the whole envelope is curl-verified {feed, cursor} — no count, no page number, no offset. The attempt configures pagination.total at a plain "total" key to show the response has nothing to hold it: paginate() fetches the page and then finds no total in the body. simplePaginate()/lazy() are stuck on the same wall from the other side — page= is accepted and ignored, so page=1 and page=2 curl-verified answer the identical ten post uris.',
             'attempt' => [
                 'probe' => 'paginate',
                 'model' => AuthorFeed::class,

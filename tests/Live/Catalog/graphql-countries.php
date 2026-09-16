@@ -29,7 +29,7 @@ return [
     'scenarios' => [
         'query via post workaround' => [
             'probe' => 'custom',
-            'features' => [],
+            'features' => ['read.data-key', 'read.data-key.nested'],
             'run' => function (LiveContext $context) {
                 $country = (new Country)->newBuilder()->post([
                     'query' => '{ country(code: "BR") { code name } }',

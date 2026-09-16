@@ -46,7 +46,7 @@ return [
         'breed map loses key names' => [
             'probe' => 'unsupported',
             'features' => ['read.list'],
-            'reason' => 'breeds/list/all answers a top-level object keyed by breed ({"affenpinscher":[],"african":["wild"],...}); hydrate() strips the keys via array_values() and hydrates each sub-breed array as attributes with no breed name attached, so the first entry (an empty array) yields a model with no attributes at all.',
+            'reason' => 'breeds/list/all answers a top-level object keyed by breed ({"affenpinscher":[],"african":["wild"],...}, curl-verified); hydrate() strips the breed names via array_values() and hands each sub-breed value to Model::fill(). A JSON list decodes to plain int keys 0..n, and fill() passes those straight to isFillable(string $key) — which has a strict string parameter — so the second entry ("african":["wild"]) throws a TypeError before any attribute is ever set. read.list cannot complete here at all, not merely lose the key names.',
             'attempt' => ['probe' => 'list', 'model' => BreedMap::class, 'min' => 100, 'fields' => ['0']],
         ],
         'sub-breed string lists hydrate empty' => [

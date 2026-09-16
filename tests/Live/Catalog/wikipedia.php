@@ -43,9 +43,14 @@ return [
         ],
         'continuation pagination' => [
             'probe' => 'unsupported',
-            'features' => ['paginate.total', 'paginate.simple', 'paginate.lazy'],
-            'reason' => 'The next page is reached only by echoing back the "continue" object from the previous response (apcontinue=...&continue=-||); there is no total, no page number and no offset for paginate()/simplePaginate()/lazy() to use.',
-            'attempt' => ['probe' => 'paginate', 'model' => AllPages::class, 'query' => fn (Builder $query) => $query->withQuery(['action' => 'query', 'list' => 'allpages', 'format' => 'json'])],
+            'features' => ['paginate.simple', 'paginate.lazy'],
+            'reason' => 'The next page is reached only by echoing back the "continue" object from the previous response (apcontinue=...&continue=-||). page= and limit= are curl-verified "Unrecognized parameters", so every page the package asks for is the same page: page=1 and page=2 answer the identical pageids, which is what the attempt reproduces (simplePaginate() advances the page number and gets the first batch back again; lazy() walks on the same mechanism). paginate.total is not claimed because the body carries no count anywhere to point pagination.total at.',
+            'attempt' => [
+                'probe' => 'simple-paginate',
+                'model' => AllPages::class,
+                'query' => fn (Builder $query) => $query->withQuery(['action' => 'query', 'list' => 'allpages', 'format' => 'json']),
+                'per_page' => 10,
+            ],
         ],
         'missing page has no error marker' => [
             'probe' => 'unsupported',

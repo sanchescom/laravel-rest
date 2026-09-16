@@ -35,7 +35,7 @@ return [
         'suffix and null id' => [
             'probe' => 'unsupported',
             'features' => ['read.find', 'errors.not-found'],
-            'reason' => 'Items live at item/{id}.json — a .json suffix appended after the id, not a bare path segment; find() renders item/8863 (no suffix), which 301-redirects (curl-verified Location: console.firebase.google.com/...) to the Firebase console\'s HTML UI, and decoding that HTML fails outright. Even with the suffix, an unknown id answers HTTP 200 with the literal body null, which also fails to decode as an array rather than triggering a 404.',
+            'reason' => 'Items live at item/{id}.json — a .json suffix appended after the id, not a bare path segment; find() renders item/8863 (no suffix), which 301-redirects (curl-verified Location: console.firebase.google.com/...) to the Firebase console\'s HTML UI, and decoding that HTML fails outright — that redirect-and-decode failure is what the attempt reproduces. errors.not-found is the second half of the same shape and is not separately exercised: even with the suffix, an unknown id answers HTTP 200 with the literal body null, which fails to decode as an array rather than triggering a 404.',
             'attempt' => ['probe' => 'find', 'model' => Item::class, 'id' => 8863],
         ],
         'id lists hydrate empty' => [

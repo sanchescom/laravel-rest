@@ -66,7 +66,19 @@ return [
         'sort direction in value' => [
             'probe' => 'unsupported',
             'features' => ['query.sort'],
-            'reason' => 'Direction is encoded in the orderby value itself (magnitude vs magnitude-asc); orderBy() renders a separate direction the API does not read, so the default grammar cannot express descending vs ascending here.',
+            'reason' => 'Direction is encoded in the orderby value itself (orderby=magnitude for descending, orderby=magnitude-asc for ascending). orderBy(\'magnitude\', ...) renders the plain grammar\'s single sort= parameter, and FDSN has no sort parameter at all: curl-verified HTTP 400 "Unknown parameter \"sort\"." for sort=-magnitude and for sort=magnitude alike, so neither direction is expressible without a custom grammar.',
+            'attempt' => [
+                'probe' => 'sort',
+                'model' => Feature::class,
+                'query' => fn (Builder $query) => $query->withQuery([
+                    'format' => 'geojson',
+                    'minmagnitude' => 6,
+                    'starttime' => '2025-01-01',
+                ])->limit(10),
+                'field' => 'magnitude',
+                'attribute' => 'properties.mag',
+                'direction' => 'desc',
+            ],
         ],
     ],
 ];
