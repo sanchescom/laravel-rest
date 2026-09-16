@@ -51,6 +51,7 @@ return [
     'scenarios' => [
         'list articles' => ['probe' => 'list', 'model' => ArticleList::class, 'min' => 10],
         'find article' => ['probe' => 'find', 'model' => Article::class, 'id' => 39958, 'fields' => ['title']],
+        'get many articles' => ['probe' => 'get-many', 'model' => Article::class, 'ids' => [39950, 39952, 39954]],
         'filter news site' => ['probe' => 'filter', 'model' => ArticleList::class, 'field' => 'news_site', 'value' => 'NASA', 'min' => 10],
         'where-in news sites' => ['probe' => 'where-in', 'model' => ArticleList::class, 'client' => ['query' => ['filters' => 'plain']], 'query' => fn (Builder $query) => $query->limit(10), 'field' => 'news_site', 'values' => ['SpaceNews', 'NASA']],
         'sort by published_at' => ['probe' => 'sort', 'model' => ArticleList::class, 'field' => 'published_at', 'direction' => 'desc'],
@@ -69,12 +70,6 @@ return [
             'probe' => 'unsupported',
             'features' => ['relation.belongs-to', 'relation.has-many'],
             'reason' => 'launches/events are embedded arrays of {launch_id, provider}; there is no fk attribute to a sibling resource.',
-        ],
-        'get many articles' => [
-            'probe' => 'unsupported',
-            'features' => ['read.get-many'],
-            'reason' => 'Every /articles/{id} detail request 301-redirects to add the trailing slash DRF requires; the client follows it, but the redirect hop is recorded as a second request per id, so getMany\'s exact-request-count assertion (one request per id) cannot be satisfied even though the data loads correctly.',
-            'attempt' => ['probe' => 'get-many', 'model' => Article::class, 'ids' => [39958, 39957, 39956]],
         ],
     ],
 ];

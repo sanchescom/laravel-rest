@@ -99,13 +99,13 @@ return [
         'species parent' => ['probe' => 'belongs-to', 'model' => Species::class, 'id' => 5231190, 'relation' => 'parentSpecies', 'foreign_key' => 'parentKey'],
         'species children' => ['probe' => 'has-many', 'model' => Species::class, 'id' => 5231190, 'relation' => 'children', 'nested' => true, 'path_suffix' => 'species/5231190/children'],
         'species occurrences' => ['probe' => 'has-many', 'model' => Species::class, 'id' => 5231190, 'relation' => 'occurrences', 'foreign_key' => 'speciesKey'],
-        'eager parents' => ['probe' => 'eager', 'model' => SpeciesSearchList::class, 'query' => fn (Builder $query) => $query->where('rank', 'GENUS')->limit(3), 'relation' => 'parentSpecies', 'mode' => 'concurrent'],
+        'eager parents' => ['probe' => 'eager', 'model' => SpeciesSearchList::class, 'query' => fn (Builder $query) => $query->where('rank', 'GENUS')->limit(3), 'relation' => 'parentSpecies', 'mode' => 'concurrent', 'foreign_key' => 'parentKey'],
         'missing species' => ['probe' => 'not-found', 'model' => Species::class, 'id' => 999999999],
         'membership' => [
             'probe' => 'unsupported',
             'features' => ['query.where-in', 'eager.batch'],
-            'reason' => 'Membership needs repeated params (key=a&key=b); a comma list is silently accepted but ignored (the default unfiltered page is returned instead of the two requested datasets).',
-            'attempt' => ['probe' => 'where-in', 'model' => DatasetList::class, 'field' => 'key', 'values' => ['80170a02-4f75-4f91-a211-dbf77f1e87c1', '65b224d2-f778-441d-9010-e0d389626ffb']],
+            'reason' => 'Membership needs repeated params for OR (rank=GENUS&rank=FAMILY works); a comma list is rejected outright for an enum field like rank (400 "Cannot parse GENUS,FAMILY into a known Rank"). dataset?key= has no filter at all (key=A, key=A&key=B, key=A,B all return the full corpus), so that endpoint cannot demonstrate the limitation.',
+            'attempt' => ['probe' => 'where-in', 'model' => SpeciesSearchList::class, 'field' => 'rank', 'values' => ['GENUS', 'FAMILY']],
         ],
         'sorting' => [
             'probe' => 'unsupported',

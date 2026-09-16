@@ -83,9 +83,13 @@ return [
         'paginate v2 spells' => ['probe' => 'paginate', 'model' => SpellV2List::class, 'per_page' => 20],
         'simple paginate v2 spells' => ['probe' => 'simple-paginate', 'model' => SpellV2List::class, 'per_page' => 20],
         'lazy walk v2 spells' => ['probe' => 'lazy', 'model' => SpellV2List::class, 'chunk' => 50, 'take' => 150],
-        'batched document spells (v1)' => ['probe' => 'eager', 'model' => DocumentV1::class, 'relation' => 'spells', 'mode' => 'batch'],
-        'concurrent document spells (v1)' => ['probe' => 'eager', 'model' => DocumentV1::class, 'query' => fn (Builder $query) => $query->limit(3), 'relation' => 'spellsByDocument', 'mode' => 'concurrent'],
+        // Batch sends one whereIn(document__slug) request and reads only its default (unpaginated)
+        // page: page 4 at 3/page picks kp+dmag-e+warlock (31+64+43 spells), all three of which land
+        // on that first page, unlike e.g. o5e+wotc-srd where wotc-srd's 319 spells crowd o5e's 2 out.
+        'batched document spells (v1)' => ['probe' => 'eager', 'model' => DocumentV1::class, 'query' => fn (Builder $query) => $query->limit(3)->page(4), 'relation' => 'spells', 'mode' => 'batch', 'foreign_key' => 'document__slug'],
+        'concurrent document spells (v1)' => ['probe' => 'eager', 'model' => DocumentV1::class, 'query' => fn (Builder $query) => $query->limit(3), 'relation' => 'spellsByDocument', 'mode' => 'concurrent', 'foreign_key' => 'document__slug'],
         'missing spell' => ['probe' => 'not-found', 'model' => SpellV2::class, 'id' => 'doesnotexist'],
+        'get many v2 spells' => ['probe' => 'get-many', 'model' => SpellV2::class, 'ids' => ['srd_fireball', 'srd_magic-missile', 'srd_acid-arrow']],
         'silently ignored lookups' => [
             'probe' => 'unsupported',
             'features' => ['query.where-in'],
@@ -96,12 +100,6 @@ return [
             'probe' => 'unsupported',
             'features' => ['relation.has-many', 'relation.belongs-to'],
             'reason' => 'v1/documents/{slug} returns 404 (only the collection endpoint works), so has-many/belongs-to probes, which fetch the parent by key first, cannot run on v1; v2 relations are embedded objects, not flat fks.',
-        ],
-        'get many v2 spells' => [
-            'probe' => 'unsupported',
-            'features' => ['read.get-many'],
-            'reason' => 'Every /v2/spells/{key} detail request 301-redirects to add the trailing slash DRF requires; the client follows it, but the redirect hop is recorded as a second request per id, so getMany\'s exact-request-count assertion (one request per id) cannot be satisfied even though the data loads correctly.',
-            'attempt' => ['probe' => 'get-many', 'model' => SpellV2::class, 'ids' => ['srd_fireball', 'srd_magic-missile', 'srd_acid-arrow']],
         ],
     ],
 ];

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sanchescom\Rest\Tests\Live\Catalog\DrupalJsonapi;
 
+use Sanchescom\Rest\Builder;
 use Sanchescom\Rest\Model;
 
 final class ProjectModule extends Model
@@ -32,23 +33,20 @@ return [
     ],
     'scenarios' => [
         'list modules' => ['probe' => 'list', 'model' => ProjectModule::class, 'min' => 10],
-        'sort by created' => ['probe' => 'sort', 'model' => ProjectModule::class, 'field' => 'created', 'attribute' => 'attributes.created', 'direction' => 'desc'],
+        'sort by created' => ['probe' => 'sort', 'model' => ProjectModule::class, 'query' => fn (Builder $query) => $query->limit(10), 'field' => 'created', 'attribute' => 'attributes.created', 'direction' => 'desc'],
+        'filter by title' => ['probe' => 'filter', 'model' => ProjectModule::class, 'field' => 'title', 'attribute' => 'attributes.title', 'value' => 'Amazon Product Advertisement API', 'min' => 1],
         'simple paginate modules' => ['probe' => 'simple-paginate', 'model' => ProjectModule::class, 'per_page' => 10],
         'find module' => ['probe' => 'find', 'model' => ProjectModule::class, 'id' => '25fa671a-ea22-4def-96ed-a6b009fb52cd'],
         'paginate with total' => [
             'probe' => 'unsupported',
             'features' => ['paginate.total'],
             'reason' => 'Drupal omits meta.count by default, so paginate() has no total to read.',
+            'attempt' => ['probe' => 'paginate', 'model' => ProjectModule::class, 'per_page' => 10],
         ],
         'missing module' => [
             'probe' => 'unsupported',
             'features' => ['errors.not-found'],
             'reason' => 'An unknown uuid request does not respond (times out after 20s+) instead of returning 404; not reliable enough for a probe, and an attempt here would hang every live run.',
-        ],
-        'exact title filter' => [
-            'probe' => 'unsupported',
-            'features' => ['query.filter'],
-            'reason' => 'filter[title]=Views returned [] (exact-match on a title that changes over time); no stable equality filter value was found to demonstrate the feature reliably.',
         ],
         'lazy walk modules' => [
             'probe' => 'unsupported',

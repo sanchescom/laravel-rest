@@ -66,6 +66,7 @@ return [
         'find book' => ['probe' => 'find', 'model' => Book::class, 'id' => '9e74d8ae-6164-4a48-9b89-763abb0af154', 'fields' => ['attributes.title']],
         'get many books' => ['probe' => 'get-many', 'model' => Book::class, 'ids' => ['9e74d8ae-6164-4a48-9b89-763abb0af154', '97d73411-7805-432e-8571-31125e88ac52', 'bd7ef3ef-9260-4f22-ad33-a9a717701a01']],
         'filter house' => ['probe' => 'filter', 'model' => CharacterList::class, 'field' => 'house_eq', 'attribute' => 'attributes.house', 'value' => 'Gryffindor', 'min' => 25],
+        'where-in houses' => ['probe' => 'where-in', 'model' => CharacterList::class, 'field' => 'house_in', 'attribute' => 'attributes.house', 'values' => ['Gryffindor', 'Slytherin']],
         'sort books by pages' => ['probe' => 'sort', 'model' => Book::class, 'field' => 'pages', 'attribute' => 'attributes.pages', 'direction' => 'desc'],
         'paginate characters' => ['probe' => 'paginate', 'model' => CharacterList::class, 'per_page' => 25],
         'simple paginate characters' => ['probe' => 'simple-paginate', 'model' => CharacterList::class, 'per_page' => 25],
@@ -75,8 +76,8 @@ return [
         'missing character' => ['probe' => 'not-found', 'model' => CharacterDetail::class, 'id' => 'doesnotexist'],
         'membership' => [
             'probe' => 'unsupported',
-            'features' => ['query.where-in', 'eager.batch'],
-            'reason' => 'Ransack _in needs filter[slug_in][]=a&filter[slug_in][]=b; comma lists and indexed arrays (filter[slug_in][0]=a) are ignored and return the unfiltered collection (verified on slug_in; house_in happens to accept a comma list).',
+            'features' => ['eager.batch'],
+            'reason' => 'slug_in is ignored in every spelling (comma, [], [0]/[1]).',
             'attempt' => ['probe' => 'where-in', 'model' => CharacterList::class, 'field' => 'slug_in', 'attribute' => 'attributes.slug', 'values' => ['1980s-hogwarts-gobstones-tournament-champion', '1980s-hogwarts-gobstones-tournament-champion-s-parents']],
         ],
         'belongs-to' => [
