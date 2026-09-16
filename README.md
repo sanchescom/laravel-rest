@@ -1,5 +1,7 @@
 # Laravel Rest
 
+![laravel-rest](.github/banner.png)
+
 ![CI](https://github.com/sanchescom/laravel-rest/actions/workflows/ci.yml/badge.svg)
 ![Latest Version](https://img.shields.io/packagist/v/sanchescom/laravel-rest.svg)
 ![Downloads](https://img.shields.io/packagist/dt/sanchescom/laravel-rest.svg)
