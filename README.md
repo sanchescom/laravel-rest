@@ -1006,7 +1006,11 @@ public function author(): BelongsTo
   `'in' => 'array'` in the `query` config to send `postId[0]=1&postId[1]=2`.
   Custom `Grammar` classes must handle the `in` operator.
 - `limit()` or `page()` inside a batched constraint limit the whole batch, not
-  each parent.
+  each parent — and so does the API's own page size: one batch is one request,
+  so children past the first page are not loaded. Live-verified on Open5e,
+  where three documents with 124 spells between them came back with 50 (the
+  API's page size) spread across the three parents. Use concurrent mode, or a
+  `limit()` constraint sized to the API, when parents can have many children.
 - Nested URL relations (`nested()`) cannot be batched.
 - Batched loading groups by the foreign key (hasMany/hasOne) or primary key
   (belongsTo) found in each response item, so those fields must be present in

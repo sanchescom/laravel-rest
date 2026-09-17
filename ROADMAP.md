@@ -48,6 +48,10 @@ the live verification program (`docs/live-verification.md`):
   path template instead of the fixed `{endpoint}/{id}`.
 - **One-based offsets.** `offset` must start at 1 (USGS): an `'offset_base'`
   pagination option.
+- **`batch()` is capped by the API's page size.** One `whereIn` request
+  returns one page, and children past it are silently dropped (Open5e: 124
+  spells across three documents, 50 returned). Page through the batch response
+  when the pagination config knows how, or at least warn when the page is full.
 - **Positional-array rows crash hydration.** APIs that return rows as JSON
   arrays instead of objects (OpenSky `states`, Dog CEO's breed map) reach
   `Model::fill()` with integer keys and raise a raw `TypeError` from
